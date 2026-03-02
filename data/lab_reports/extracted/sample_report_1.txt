@@ -1,0 +1,701 @@
+DUTCH Complete
+Female Report
+Accession # 01035999 Collection Times:
+Female Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Female
+Ordering Provider: Last Menstrual Period:
+Precision Analytical 2022-05-25
+Hormone Testing Summary
+ESTROGEN & PROGESTERONE ANDROGENS
+6.3
+11.5 17.5
+4.0
+1.8 4.0 4.5 6.0 1.3 2.3 7.2 14.0 6.0 32.0 30.0
+0.7 2.0 20.0
+0.2 0.3
+Estradiol (E2) Progesterone Testosterone 5a-Androstanediol
+Serum Equivalent*, ng/mL
+1680
+1260
+CORTISOL
+500 1686 3000
+Daily Free Cortisol Pattern
+Cortisol Clearance Rate Total DHEA Production
+200
+Patient Values THF + THE / Cortisol + Cortisone DHEA-S + Etiocholanolone + Androsterone
+Low High
+160
+98%
+120
+High
+Range
+Li
+80 mit Cortisol Metabolism
+65 58 2750 6878
+40
+0
+Low Range
+Limit
+200 6500
+WAKING (A) MORNING (B) AFTERNOON (C) NIGHT (D) 24hr Free Cortisol Metabolized Cortisol
+A + B + C + D Total Cortisol Production (THF + THE)
+*Progesterone Serum Equivalent is a calculated value based on urine pregnanediol.
+Optimal Luteal Range Postmenopausal Range Out of Range Edge of Range
+**Free cortisol best reflects tissue levels. Metabolized cortisol best reflects total cortisol production.
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Female Sample Report Page 1 of 10
+3138 NE Rivergate Street Accessioned - 04/03/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/22/2025 Report Version 1.5.2
+)gm/gn(**lositroC
+Accession # 01035999 Collection Times:
+Female Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Female
+Ordering Provider: Last Menstrual Period:
+Precision Analytical 2022-05-25
+Sex Hormones & Metabolites
+TEST RESULT UNITS LUTEAL* POSTMENOPAUSAL
+Progesterone Metabolites (Urine)
+b-Pregnanediol Below luteal range 100.0 ng/mg 600 - 2000 60 - 200
+a-Pregnanediol Below luteal range 49.0 ng/mg 200 - 740 15 - 50
+Estrogens and Metabolites (Urine)
+Estrone (E1) High end of luteal range 24.01 ng/mg 12 - 26 1.0 - 7.0
+Estradiol (E2) High end of luteal range 4.00 ng/mg 1.8 - 4.5 0.2 - 0.7
+Estriol (E3) High end of luteal range 16.0 ng/mg 5 - 18 0.6 - 4.0
+2-OH-E1 Below luteal range 3.58 ng/mg 5.1 - 13.1 0.3 - 2.0
+4-OH-E1 Within luteal range 1.20 ng/mg 0 - 1.8 0 - 0.3
+16-OH-E1 Above luteal range 2.80 ng/mg 0.7 - 2.6 0.2 - 0.6
+2-Methoxy-E1 Below luteal range 1.35 ng/mg 2.5 - 6.5 0.3 - 1.4
+2-OH-E2 Within luteal range 0.74 ng/mg 0 - 3.1 0 - 0.52
+4-OH-E2 Within luteal range 0.41 ng/mg 0 - 0.52 0 - 0.12
+Total Estrogen Within range 54.1 ng/mg 35 - 70 3.5 - 15
+Metabolite Ratios (Urine)
+2-OH / 16-OH-E1 Balance Below range 1.28 ratio 2.69 - 11.83
+2-OH / 4-OH-E1 Balance Below range 2.98 ratio 5.4 - 12.62
+2-Methoxy / 2-OH Balance Below range 0.38 ratio 0.39 - 0.67
+Androgens and Metabolites (Urine) Range
+DHEA-S Below range 16.0 ng/mg 20 - 750
+Androsterone Within range 1195.0 ng/mg 200 - 1650
+Etiocholanolone Within range 474.6 ng/mg 200 - 1000
+Testosterone Within range 7.16 ng/mg 2.3 - 14
+5a-DHT High end of range 6.2 ng/mg 0 - 6.6
+5a-Androstanediol Above range 32.0 ng/mg 6 - 30
+5b-Androstanediol Within range 42.6 ng/mg 12 - 75
+Epi-Testosterone Within range 8.6 ng/mg 2.3 - 14
+* The Luteal Range represents the expected premenopausal luteal range, collected menstrual cycle days 19-22 of a 28-day cycle. If your patient
+noted taking oral progesterone, the reference range represents the expected range on 100 - 200 mg of oral micronized progesterone (OMP). The
+ranges in the table below represent ranges in other times of the cycle your patient may have collected, such as follicular or ovulatory phases.
+ADDITIONAL NORMAL RANGES FOLLICULAR OVULATORY ON ORAL PG
+b-Pregnanediol 100 - 300 100 - 300 2000 - 9000
+a-Pregnanediol 25 - 100 25 - 100 580 - 3000
+Estrone (E1) 4.0 - 12.0 22 - 68 N/A
+Estradiol (E2) 1.0 - 2.0 4.0 - 12.0 N/A
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Female Sample Report Page 2 of 10
+3138 NE Rivergate Street Accessioned - 04/03/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/22/2025 Report Version 1.5.2
+SEX HORMONES & METABOLITES Optimal Luteal Range Postmenopausal Range Out of Range Edge of Range
+Androgens Progesterone
+Pregnenolone
+60 270
+20 16
+750
+DHEA DHEA-S
+Progesterone
+6.3
+4.0 5b 5a
+2.3 7.2 14.0 600 100 200 49
+200 2000 50 740
+Androstenedione
+60 15
+5b 5a Testosterone b-Pregnanediol a-Pregnanediol
+aro
+470
+710
+600
+830
+matase
+aromatase Primary Estrogens
+200 475 1000 200 1195 1650
+12 24.0 26 1.8 4.0 4.5 5 16.0 18
+7.0 0.7 4.0
+1.0 0.2 0.6
+Etiocholanolone Androsterone
+17b-HSD CYP3A4
+Estrone (E1) Estradiol (E2) Estriol (E3)
+Testosterone
+)e
+5b 5a v itc
+e
+5b-DHT 5a-DHT
+to
+rp
+(
+1
+A 1
+CYP1B1 CYP3A4
+P
+Y
+C
+30 55 11.5 17.5
+Phase 1 Estrogen Metabolism
+12 43 75 6.0 32.0 30.0
+5.1 3.6 13.1 1.2 1.8 0.7 2.8 2.6
+5b-Androstanediol 5a-Androstanediol 2.0 0.3 0.6
+0.3 0.2
+0.0
+2-OH-E1 4-OH-E1 16-OH-E1
+5a-Reductase Activity
+Androsterone/Etiocholanolone
+Methylation
+Low (5b) High (5a)
+Detox
+75% Glutathione QUINONE 4If - Ono Ht -Ed 1e t co ax ni fi bie nd d, to
+Phase 2 Estrogen Metabolism
+MCO etM hT ylation Detox (reactive) and damage DNA
+2-OH / 16-OH-E1 Balance
+16-OH-E1 2-OH-E1
+Methylation Activity
+2-Methoxy / 2-OH-E1 2.5 1.4 6.5 11%
+Patient 2-OH 4-OH 16-OH
+Low High 1.4 2-OH / 4-OH-E1 Balance Percentages 47.2% 15.8% 36.9%
+0.3
+17% 4-OH-E1 2-OH-E1 Expected 60-80% 7.5-11% 13-30%
+2-Methoxy-E1 Percentages (2-OH) (4-OH) (16-OH)
+4%
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Female Sample Report Page 3 of 10
+3138 NE Rivergate Street Accessioned - 04/03/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/22/2025 Report Version 1.5.2
+DSH-b71
+Accession # 01035999 Collection Times:
+Female Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Female
+Ordering Provider: Last Menstrual Period:
+Precision Analytical 2022-05-25
+Adrenal Hormones & Metabolites
+TEST RESULT UNITS NORMAL RANGE
+Daily Free Cortisol and Cortisone (Urine)
+Cortisol A - Waking Low end of range 12.0 ng/mg 10 - 50
+Cortisol B - Morning Low end of range 32.0 ng/mg 30 - 130
+Cortisol C - Afternoon Low end of range 9.0 ng/mg 7 - 30
+Cortisol D - Night Within range 5.0 ng/mg 0 - 14
+Cortisone A - Waking Low end of range 50.0 ng/mg 40 - 120
+Cortisone B - Morning Low end of range 110.0 ng/mg 90 - 230
+Cortisone C - Afternoon Within range 52.0 ng/mg 32 - 110
+Cortisone D - Night Within range 15.0 ng/mg 0 - 55
+24hr Free Cortisol Below range 58.0 ng/mg 65 - 200
+24hr Free Cortisone Low end of range 227.0 ng/mg 220 - 450
+Creatinine (Urine)
+Creatinine A - Waking Within range 0.50 mg/ml 0.2 - 2
+Creatinine B - Morning Within range 0.72 mg/ml 0.2 - 2
+Creatinine C - Afternoon Within range 0.48 mg/ml 0.2 - 2
+Creatinine D - Night Within range 0.34 mg/ml 0.2 - 2
+Cortisol Metabolites and DHEA-S (Urine)
+a-Tetrahydrocortisol (a-THF) Above range 464.0 ng/mg 75 - 370
+b-Tetrahydrocortisol (b-THF) Within range 2318.9 ng/mg 1050 - 2500
+b-Tetrahydrocortisone (b-THE) Above range 4095.1 ng/mg 1550 - 3800
+Metabolized Cortisol (THF + THE) Above range 6878.0 ng/mg 2750 - 6500
+DHEA-S Below range 16.0 ng/mg 20 - 750
+Cortisol Clearance Rate (CCR) Above range 24.1 6 - 12.5
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Female Sample Report Page 4 of 10
+3138 NE Rivergate Street Accessioned - 04/03/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/22/2025 Report Version 1.5.2
+ADRENAL HORMONES & METABOLITES
+S T RESS Stress causes the brain to release ACTH, which stimulates the adrenal glands to make hormones including DHEA and Cortisol.
+1680
+Hypothalamus 1260
+Pituitary
+10 5 500 1686 3000 2750 6878
+Pineal
+85 6500
+Melatonin - Waking Total DHEA Production Metabolized Cortisol
+6-OH-Melatonin-Sulfate DHEA-S + Etiocholanolone + Androsterone Total Cortisol Production (THF + THE)
+Cortisol Clearance Rate
+THF + THE / Cortisol + Cortisone
+Low High
+m
+DHEA
+CortisolMetabolis
+Cortisone
+CS oy rts ist oe
+l
+/m Coic
+rt
+isP or ne
+e
+f Me er tae bn
+o9 lc8 it%
+ee
+s
+Cortisol
+(THE) (THF)
+32%
+Cortisol
+NOTE: This 11b-HSD index measures the balance of cortisol
+DaA ild yr Fe rn ea el CG ola rn tid
+sone Pattern
+Circulating
+Free
+Cortisol Daily
+Freea bn ald
+a
+Cnco cer ot i os
+f
+ro an tce
+t
+iim
+v
+see ct oa ob
+rt
+lo
+is
+li ot Pe
+l
+s
+a
+a
+nw dh
+t
+ii nc th
+a c
+eb te ivs ret
+c
+nr oefl rte isc ots
+n
+t eh se
+y
+o stv ee mra icll
+a lly.
+400 200
+Patient Values Patient Values
+320 160
+2 14 60
+0
+High
+Range
+Limit
+1 82 00
+High
+Range
+Li
+mit
+80 40
+0
+Low
+Range
+Limit
+0
+Low Range
+Limit
+WAKING (A) MORNING (B) AFTERNOON (C) NIGHT (D) WAKING (A) MORNING (B) AFTERNOON (C) NIGHT (D)
+220 227
+CortisolandCortisoneinterconvert(11b-HSD)
+65 58
+450 200
+24hr Free Cortisone 24hr Free Cortisol
+A + B + C + D A + B + C + D
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Female Sample Report Page 5 of 10
+3138 NE Rivergate Street Accessioned - 04/03/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/22/2025 Report Version 1.5.2
+HRC
+HTCA
+)gm/gn(enositroC )gm/gn(lositroC
+Accession # 01035999 Collection Times:
+Female Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Female
+Ordering Provider: Last Menstrual Period:
+Precision Analytical 2022-05-25
+Organic Acid Tests (OATs)
+TEST RESULT UNITS NORMAL RANGE
+Nutritional Organic Acids (Urine)
+Vitamin B12 Marker - May be deficient if high
+Methylmalonate (MMA) Above range 4.9 ug/mg 0 - 2.5
+Vitamin B6 Markers - May be deficient if high
+Xanthurenate Above range 1.23 ug/mg 0.12 - 1.2
+Kynurenate Above range 5.4 ug/mg 0.8 - 4.5
+Biotin Marker - May be deficient if high
+b-Hydroxyisovalerate Within range 7.9 ug/mg 0 - 12.5
+Glutathione Marker - May be deficient if low or high
+Pyroglutamate Within range 42.0 ug/mg 28 - 58
+Gut Marker - Potential gut putrefaction or dysbiosis if high
+Indican Above range 114.0 ug/mg 0 - 100
+Neuro-Related Markers (Urine)
+Dopamine Metabolite
+Homovanillate (HVA) Within range 4.4 ug/mg 3 - 11
+Norepinephrine/Epinephrine Metabolite
+Vanilmandelate (VMA) Within range 4.3 ug/mg 2.2 - 5.5
+Neuroinflammation Marker
+Quinolinate Above range 13.2 ug/mg 0 - 9.6
+Additional Markers (Urine)
+Melatonin - Waking
+6-OH-Melatonin-Sulfate Below range 5.3 ng/mg 10 - 85
+Oxidative Stress / DNA Damage
+8-Hydroxy-2-deoxyguanosine (8-OHdG) Within range 2.6 ng/mg 0 - 5.2
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Female Sample Report Page 6 of 10
+3138 NE Rivergate Street Accessioned - 04/03/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/22/2025 Report Version 1.5.2
+DUTCH Complete
+Male Report
+Accession # 01036002 Collection Times:
+Male Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Male
+Ordering Provider:
+Precision Analytical
+Hormone Testing Summary
+ESTROGEN ANDROGENS
+3480
+40 70 2200
+80 160
+2.4 25 36 30 26 1000 1330 5500
+0.5 2.2 115 250
+Estradiol (E2) Testosterone 5a-Androstanediol Total DHEA Production
+DHEA-S + Etiocholanolone + Androsterone
+CORTISOL
+Daily Free Cortisol Pattern
+Cortisol Clearance Rate
+300 Patient Values THF + THE / Cortisol + Cortisone
+Low High
+240
+17%
+1 18 20
+0
+High
+Range
+Li mit
+Cortisol Metabolism
+75 167 4550 3990
+60
+300 10000
+0 Low Range Limit
+24hr Free Cortisol Metabolized Cortisol
+WAKING (A) MORNING (B) AFTERNOON (C) NIGHT (D)
+A + B + C + D Total Cortisol Production (THF + THE)
+Normal Age 18 - 40 (Androgens) **Free cortisol best reflects tissue levels. Metabolized cortisol best reflects total cortisol production.
+Out of Range Edge of Range Age 41 - 60+ (Androgens)
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Male Sample Report Page 1 of 10
+3138 NE Rivergate Street Accessioned - 04/04/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/21/2025 Report Version 1.5.2
+)gm/gn(**lositroC
+Accession # 01036002 Collection Times:
+Male Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Male
+Ordering Provider:
+Precision Analytical
+Sex Hormones & Metabolites
+TEST RESULT UNITS NORMAL RANGE
+Progesterone Metabolites (Urine)
+b-Pregnanediol Within range 175.7 ng/mg 75 - 400
+a-Pregnanediol Low end of range 24.0 ng/mg 20 - 130
+Estrogens and Metabolites (Urine)
+Estrone (E1) Above range 17.96 ng/mg 4 - 16
+Estradiol (E2) Above range 2.42 ng/mg 0.5 - 2.2
+Estriol (E3) Within range 5.6 ng/mg 2 - 8
+2-OH-E1 Within range 2.08 ng/mg 0 - 5.9
+4-OH-E1 Within range 0.60 ng/mg 0 - 0.8
+16-OH-E1 Within range 1.00 ng/mg 0 - 1.2
+2-Methoxy-E1 Within range 1.25 ng/mg 0 - 2.8
+2-OH-E2 Within range 0.31 ng/mg 0 - 1.2
+4-OH-E2 Within range 0.21 ng/mg 0 - 0.25
+Total Estrogen Within range 31.4 ng/mg 10 - 34
+Metabolite Ratios (Urine)
+2-OH / 16-OH-E1 Balance Below range 2.06 ratio 2.85 - 9.88
+2-OH / 4-OH-E1 Balance Below range 3.43 ratio 6.44 - 12.6
+2-Methoxy / 2-OH Balance Within range 0.61 ratio 0.4 - 0.7
+Androgens and Metabolites (Urine)
+DHEA-S Low end of range 110.0 ng/mg 30 - 1500
+Androsterone Below range 410.0 ng/mg 500 - 3000
+Etiocholanolone Within range 809.7 ng/mg 400 - 1500
+Testosterone Low end of range 36.03 ng/mg 25 - 115
+5a-DHT Low end of range 7.0 ng/mg 5 - 25
+5a-Androstanediol Below range 26.0 ng/mg 30 - 250
+5b-Androstanediol Within range 142.0 ng/mg 40 - 250
+Epi-Testosterone Low end of range 41.2 ng/mg 25 - 115
+“Normal” range shown above is the overall normal range across all ages (shown as between the stars on the dials). Age-dependent reference
+ranges are now included with the DUTCH dials on the next page.
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Male Sample Report Page 2 of 10
+3138 NE Rivergate Street Accessioned - 04/04/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/21/2025 Report Version 1.5.2
+SEX HORMONES & METABOLITES
+Androgens Normal Age 18 - 40 (Androgens)
+Out of Range Edge of Range Age 41 - 60+ (Androgens)
+115
+820
+Pregnenolone
+30 110
+1500
+DHEA DHEA-S
+40
+80
+25 36
+115
+Androstenedione
+5b 5a
+Testosterone
+765
+1090
+1170
+1870
+aro
+matase
+aromatase Estrogens
+400 810 1500 500 410 3000
+18.0 2.4 5.6
+4.0 16.0 0.5 2.2 2.0 8.0
+Etiocholanolone Androsterone
+17b-HSD CYP3A4
+Testosterone Estrone (E1) Estradiol (E2) Estriol (E3)
+5b 5a
+)e
+9 v itc
+5b-DHT
+5 7 20
+e to
+rp
+(
+1 A
+CYP1B1 CYP3A4
+1
+P
+25 Y C
+5a-DHT
+Phase 1 Estrogen Metabolism
+70 70
+160 160
+40 142 30 26
+2.1 0.6 1.0
+250 250
+5.9 0.8 1.2
+5b-Androstanediol 5a-Androstanediol 0.0 0.0 0.0
+2-OH-E1 4-OH-E1 16-OH-E1
+5a-Reductase Activity
+Androsterone/Etiocholanolone
+Methylation
+Low (5b) High (5a) Detox
+8% Glutathione QUINONE 4If - Ono Ht -Ed 1e t co ax ni fi bie nd d, to
+Phase 2 Estrogen Metabolism
+MCO etM hT ylation Detox (reactive) and damage DNA
+2-OH / 16-OH-E1 Balance
+16-OH-E1 2-OH-E1
+Methylation Activity
+2-Methoxy / 2-OH-E1 1.3 14%
+Patient 2-OH 4-OH 16-OH
+Low High 2.8 2-OH / 4-OH-E1 Balance Percentages 56.3% 16.4% 27.3%
+0.0
+66% 4-OH-E1 2-OH-E1 Expected 60-80% 7.5-11% 13-30%
+2-Methoxy-E1 Percentages (2-OH) (4-OH) (16-OH)
+4%
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Male Sample Report Page 3 of 10
+3138 NE Rivergate Street Accessioned - 04/04/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/21/2025 Report Version 1.5.2
+DSH-b71
+Accession # 01036002 Collection Times:
+Male Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Male
+Ordering Provider:
+Precision Analytical
+Adrenal Hormones & Metabolites
+TEST RESULT UNITS NORMAL RANGE
+Daily Free Cortisol and Cortisone (Urine)
+Cortisol A - Waking Low end of range 21.0 ng/mg 13 - 80
+Cortisol B - Morning Within range 82.0 ng/mg 35 - 180
+Cortisol C - Afternoon Above range 52.0 ng/mg 10 - 45
+Cortisol D - Night Within range 12.0 ng/mg 0 - 20
+Cortisone A - Waking Low end of range 48.0 ng/mg 40 - 160
+Cortisone B - Morning Within range 124.0 ng/mg 80 - 240
+Cortisone C - Afternoon High end of range 128.0 ng/mg 40 - 130
+Cortisone D - Night Within range 22.0 ng/mg 0 - 70
+24hr Free Cortisol Within range 167.0 ng/mg 75 - 300
+24hr Free Cortisone Within range 322.0 ng/mg 220 - 550
+Creatinine (Urine)
+Creatinine A - Waking Within range 0.50 mg/ml 0.3 - 3
+Creatinine B - Morning Within range 0.72 mg/ml 0.3 - 3
+Creatinine C - Afternoon Within range 0.48 mg/ml 0.3 - 3
+Creatinine D - Night Within range 0.34 mg/ml 0.3 - 3
+Cortisol Metabolites and DHEA-S (Urine)
+a-Tetrahydrocortisol (a-THF) Below range 140.0 ng/mg 175 - 700
+b-Tetrahydrocortisol (b-THF) Low end of range 1900.0 ng/mg 1750 - 4000
+b-Tetrahydrocortisone (b-THE) Below range 1950.0 ng/mg 2350 - 5800
+Metabolized Cortisol (THF + THE) Below range 3990.0 ng/mg 4550 - 10000
+DHEA-S Low end of range 110.0 ng/mg 30 - 1500
+Cortisol Clearance Rate (CCR) Below range 8.2 8.5 - 17.5
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Male Sample Report Page 4 of 10
+3138 NE Rivergate Street Accessioned - 04/04/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/21/2025 Report Version 1.5.2
+ADRENAL HORMONES & METABOLITES
+S T RESS Stress causes the brain to release ACTH, which stimulates the adrenal glands to make hormones including DHEA and Cortisol.
+3480
+Hypothalamus 2200
+Pituitary
+10 8 1000 1330 5500 4550 3990
+Pineal
+85 10000
+Melatonin - Waking Total DHEA Production Metabolized Cortisol
+6-OH-Melatonin-Sulfate DHEA-S + Etiocholanolone + Androsterone Total Cortisol Production (THF + THE)
+Cortisol Clearance Rate
+THF + THE / Cortisol + Cortisone
+Low High
+m
+DHEA
+CortisolMetabolis
+Cortisone
+CS
+o1
+y
+r7 ts%
+ist oe
+l
+/m Coic
+rt
+isP or ne
+e
+f Me er tae bn olc itee
+s
+Cortisol
+(THE) (THF)
+79%
+Cortisol
+NOTE: This 11b-HSD index measures the balance of cortisol
+DaA ild yr Fe rn ea el CG ola rn tid
+sone Pattern
+Circulating
+Free
+Cortisol Daily
+Freea bn ald
+a
+Cnco cer ot i os
+f
+ro an tce
+t
+iim
+v
+see ct oa ob
+rt
+lo
+is
+li ot Pe
+l
+s
+a
+a
+nw dh
+t
+ii nc th
+a c
+eb te ivs ret
+c
+nr oefl rte isc ots
+n
+t eh se
+y
+o stv ee mra icll
+a lly.
+400 300
+Patient Values Patient Values
+320 240
+2 14 60
+0
+High
+Range
+Limit
+1 18 20
+0
+High
+Range
+Li mit
+80 60
+0
+Low Range
+Limit
+0 Low Range Limit
+WAKING (A) MORNING (B) AFTERNOON (C) NIGHT (D) WAKING (A) MORNING (B) AFTERNOON (C) NIGHT (D)
+220 322
+CortisolandCortisoneinterconvert(11b-HSD)
+75 167
+550 300
+24hr Free Cortisone 24hr Free Cortisol
+A + B + C + D A + B + C + D
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Male Sample Report Page 5 of 10
+3138 NE Rivergate Street Accessioned - 04/04/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/21/2025 Report Version 1.5.2
+HRC
+HTCA
+)gm/gn(enositroC )gm/gn(lositroC
+Accession # 01036002 Collection Times:
+Male Sample Report 2022-06-13 04:00AM (U)
+123 A Street 2022-06-13 06:00AM (U)
+2022-06-13 03:00PM (U)
+Sometown, CA 90266
+2022-06-13 08:00PM (U)
+DOB: 1976-01-01
+Age: 46
+Sex: Male
+Ordering Provider:
+Precision Analytical
+Organic Acid Tests (OATs)
+TEST RESULT UNITS NORMAL RANGE
+Nutritional Organic Acids (Urine)
+Vitamin B12 Marker - May be deficient if high
+Methylmalonate (MMA) Within range 2.9 ug/mg 0 - 3.5
+Vitamin B6 Markers - May be deficient if high
+Xanthurenate Above range 2.20 ug/mg 0.2 - 1.9
+Kynurenate High end of range 6.4 ug/mg 1 - 6.6
+Biotin Marker - May be deficient if high
+b-Hydroxyisovalerate Above range 23.0 ug/mg 0 - 18
+Glutathione Marker - May be deficient if low or high
+Pyroglutamate Within range 62.0 ug/mg 38 - 83
+Gut Marker - Potential gut putrefaction or dysbiosis if high
+Indican Within range 90.4 ug/mg 0 - 131
+Neuro-Related Markers (Urine)
+Dopamine Metabolite
+Homovanillate (HVA) Low end of range 4.4 ug/mg 4 - 16
+Norepinephrine/Epinephrine Metabolite
+Vanilmandelate (VMA) High end of range 7.3 ug/mg 2.5 - 7.5
+Neuroinflammation Marker
+Quinolinate Within range 9.1 ug/mg 0 - 12.5
+Additional Markers (Urine)
+Melatonin - Waking
+6-OH-Melatonin-Sulfate Below range 7.8 ng/mg 10 - 85
+Oxidative Stress / DNA Damage
+8-Hydroxy-2-deoxyguanosine (8-OHdG) Within range 3.7 ng/mg 0 - 8.8
+Precision Analytical (Dawn Huo, Ph.D., Lab Director) Male Sample Report Page 6 of 10
+3138 NE Rivergate Street Accessioned - 04/04/2025 CLIA Lic. #38D2047310
+McMinnville, OR 97128 Final Report - 4/21/2025 Report Version 1.5.2

@@ -1,0 +1,167 @@
+Patient: Ima Sample Accession: 00000000-0001
+Collected: 08/02/2022 Received: 08/3/2022
+DOB: 07/11/1981 Completed: 8/17/2022
+Gender: M Ordered by: Diane Farhi, MD
+5894 Shiloh Rd, Ste 101 | Alpharetta GA 30005
+877.485.5336
+DDNNAA SSTTOOOOLL AANNAALLYYSSIISS BBYY QQUUAANNTTIITTAATTIIVVEE PPCCRR
+YYOOUURR PPEERRSSOONNAALLIIZZEEDD RREEPPOORRTT
+PATHOGENS
+The GI-MAP® includes pathogens (bacterial, parasitic and viral) commonly known to cause gastroenteritis. Note that
+not all individuals with positive findings will present with symptoms. Many factors, including the health of the individual
+(such as immune health, digestive function, and microbiome balance), the transient nature of most pathogens, and the
+presence and expression of virulence factors, all contribute to pathogen virulence and individual symptoms.
+BACTERIAL PATHOGENS Result Reference
+Campylobacter < dl < 1.00e3
+C.difficile Toxin A 1.21e5 High ↑ < 1.00e3
+C.difficile Toxin B 2.27e5 High ↑ < 1.00e3
+Enterohemorrhagic E. coli < dl < 1.00e3
+E.coli O157 < dl < 1.00e3
+Enteroinvasive E. coli/Shigella < dl < 1.00e2
+Enterotoxigenic E. coli LT/ST < dl < 1.00e3
+Shiga-like Toxin E. coli stx1 < dl < 1.00e3
+Shiga-like Toxin E. coli stx2 < dl < 1.00e3
+Salmonella < dl < 1.00e4
+Vibrio cholerae < dl < 1.00e5
+Yersinia enterocolitica 4.46e3 < 1.00e5
+PARASITIC PATHOGENS
+Cryptosporidium < dl < 1.00e6
+Entamoeba histolytica < dl < 1.00e4
+Giardia < dl < 5.00e3
+VIRAL PATHOGENS
+Adenovirus 40/41 < dl < 1.00e10
+Norovirus GI/II < dl < 1.00e7
+KEY: Results are reported as genome equivalents per gram of stool, which is a standard method for estimating the number of
+microbes measured per gram of stool, based on qPCR analysis of DNA samples.
+7
+Results are expressed in standard scientific notation. For example, a reported result of 3.5e7 is equivalent to 3.5 x 10
+microbes per gram, which equals 35,000,000 (35 million) microbes per gram of stool.
+< dl represents results below detectable limit.
+The assays were developed and/or the performance characteristics CLIA# 11D-2097795
+determined by Diagnostic Solutions Laboratory. Medical Director - Diane Farhi, MD
+1
+Patient: Ima Sample Accession: 00000000-0001
+HELICOBACTER PYLORI
+H.PYLORI & VIRULENCE FACTORS Result Reference
+Helicobacter pylori 2.90e3 High ↑ < 1.00e3
+Virulence Factor, babA Positive Negative
+Virulence Factor, cagA Positive Negative
+Virulence Factor, dupA Negative Negative
+Virulence Factor, iceA Negative Negative
+Virulence Factor, oipA Negative Negative
+Virulence Factor, vacA Negative Negative
+Virulence Factor, virB Positive Negative
+Virulence Factor, virD Positive Negative
+CCOOMMMMEENNSSAALL//KKEEYYSSTTOONNEE BBAACCTTEERRIIAA
+COMMENSAL BACTERIA Result Reference
+BBaacctteerrooiiddeess ffrraaggiilliiss 88..9988ee1100 1.6e91 -. 62e.59e -1 21.o5reg1/g1
+BBiiffiiddoobbaacctteerriiuumm sspppp.. 11..8899ee1100 >6.7e>7 6o.r7ge/g7
+EEnntteerrooccooccccuuss sspppp.. 22..4455ee77 1.9e51 -. 92e.05e -8 2o.r0ge/g8
+EEsscchheerriicchhiiaa sspppp.. 22..1144ee88 3.7e63 -. 73e.86e -9 3o.r8ge/g9
+LLaaccttoobbaacciilllluuss sspppp.. 66..5555ee66 8.6e58 -. 66e.25e -8 6o.r2ge/g8
+EEnntteerroobbaacctteerr sspppp.. 22..0077ee66 1.0e61 -. 05e.06e -7 5o.r0ge/g7
+AAkkkkeerrmmaannssiiaa mmuucciinniipphhiillaa <1.<0d0le L2 1.0e11 -. 08e.21e -6 8o.r2ge/g6
+FFaaeeccaalliibbaacctteerriiuumm pprraauussnniittzziiii 55..6666ee55 1.0e31 -. 05e.03e -8 5o.r0ge/g8
+RRoosseebbuurriiaa sspppp.. 7.971.9e15e L5 5.0e75 -. 02e.07e -1 20.o0reg1/g0
+BACTERIAL PHYLA
+BBaacctteerrooiiddeetteess 11..2211ee1122 8.6e181. 6- e31.31e -1 32.o3reg1/g2
+FFiirrmmiiccuutteess 4.740.7e01e01 L0 5.7e150. 7- e31.00e -1 31.o0reg1/g1
+FFiirrmmiiccuutteess::BBaacctteerrooiiddeetteess RRaattiioo 00..0044 << 11..00
+The assays were developed and/or the performance characteristics CLIA# 11D-2097795
+determined by Diagnostic Solutions Laboratory. Medical Director - Diane Farhi, MD
+2
+Patient: Ima Sample Accession: 00000000-0001
+OPPORTUNISTIC/OVERGROWTH MICROBES
+DYSBIOTIC & OVERGROWTH BACTERIA Result Reference
+Bacillus spp. 2.56e5 < 1.76e6
+Enterococcus faecalis 1.81e3 < 1.00e4
+Enterococcus faecium < dl < 1.00e4
+Morganella spp. < dl < 1.00e3
+Pseudomonas spp. < dl < 1.00e4
+Pseudomonas aeruginosa < dl < 5.00e2
+Staphylococcus spp. < dl < 1.00e4
+Staphylococcus aureus 3.83e2 < 5.00e2
+Streptococcus spp. < dl < 1.00e3
+COMMENSAL OVERGROWTH MICROBES
+Desulfovibrio spp. 1.84e3 < 7.98e8
+Methanobacteriaceae (family) 1.24e8 < 3.38e8
+INFLAMMATORY & AUTOIMMUNE-RELATED BACTERIA
+Citrobacter spp. < dl < 5.00e6
+Citrobacter freundii < dl < 5.00e5
+Klebsiella spp. < dl < 5.00e3
+Klebsiella pneumoniae < dl < 5.00e4
+M.avium subsp. paratuberculosis < dl < 5.00e3
+Proteus spp. < dl < 5.00e4
+Proteus mirabilis < dl < 1.00e3
+COMMENSAL INFLAMMATORY & AUTOIMMUNE-RELATED BACTERIA
+Enterobacter spp. 2.07e6 < 5.00e7
+Escherichia spp. 2.14e8 < 3.80e9
+Fusobacterium spp. 2.56e7 < 1.00e8
+Prevotella spp. 3.86e7 < 1.00e8
+FUNGI/YEAST
+FUNGI/YEAST Result Reference
+Candida spp. 4.53e4 High ↑ < 5.00e3
+Candida albicans < dl < 5.00e2
+Geotrichum spp. < dl < 3.00e2
+Microsporidium spp. < dl < 5.00e3
+Rhodotorula spp. < dl < 1.00e3
+VIRUSES
+VIRUSES Result Reference
+Cytomegalovirus < dl < 1.00e5
+Epstein-Barr Virus < dl < 1.00e7
+The assays were developed and/or the performance characteristics CLIA# 11D-2097795
+determined by Diagnostic Solutions Laboratory. Medical Director - Diane Farhi, MD
+3
+Patient: Ima Sample Accession: 00000000-0001
+PARASITES
+PROTOZOA Result Reference
+Blastocystis hominis < dl < 2.00e3
+Chilomastix mesnili < dl < 1.00e5
+Cyclospora spp. < dl < 5.00e4
+Dientamoeba fragilis < dl < 1.00e5
+Endolimax nana < dl < 1.00e4
+Entamoeba coli < dl < 5.00e6
+Pentatrichomonas hominis < dl < 1.00e2
+WORMS
+Ancylostoma duodenale Not Detected Not Detected
+Ascaris lumbricoides Not Detected Not Detected
+Necator americanus Not Detected Not Detected
+Trichuris trichiura Not Detected Not Detected
+Taenia spp. Not Detected Not Detected
+IINNTTEESSTTIINNAALL HHEEAALLTTHH MMAARRKKEERRSS
+DIGESTION Result Reference
+SStteeaattooccrriitt <dl<dl << 1155 %%
+EEllaassttaassee--11 75>0750 >> 220000 uugg//gg
+GI MARKERS
+ββ--GGlluuccuurroonniiddaassee 258245 8H4 H << 22448866 UU//mmLL
+OOccccuulltt BBlloooodd -- FFIITT 0 0 << 1100 uugg//gg
+IMMUNE RESPONSE
+SSeeccrreettoorryy IIggAA 552552 551100 -- 22001100 uugg//gg
+AAnnttii--gglliiaaddiinn IIggAA 157157 << 117755 UU//gL
+EEoossiinnoopphhiill AAccttiivvaattiioonn PPrrootteeiinn
+1.410.40 << 22..3344 uugg//gg
+((EEDDNN,, EEPPXX))
+INFLAMMATION
+CCaallpprrootteeccttiinn 116116 << 117733 uugg//gg
+The assays were developed and/or the performance characteristics CLIA# 11D-2097795
+determined by Diagnostic Solutions Laboratory. Medical Director - Diane Farhi, MD
+4
+Patient: Ima Sample Accession: 00000000-0001
+H. PYLORI ANTIBIOTIC RESISTANCE GENES
+Result Reference Result Reference
+Amoxicillin Positive Negative Clarithromycin Positive Negative
+Genes associated with amoxicillin resistance Genes associated with clarithromycin resistance
+PBP1A S414R Present A2142C Absent
+PBP1A T556S Absent A2142G Absent
+PBP1A N562Y Absent A2143G Present
+Result Reference Result Reference
+Fluoroquinolones Negative Negative Tetracycline Negative Negative
+Genes associated with fluoroquinolone resistance Genes associated with tetracycline resistance
+gyrA N87K Absent A926G Absent
+gyrA D91N Absent AGA926-928TTC Absent
+gyrA D91G Absent
+gyrB S479N Absent
+gyrB R484K Absent
+The assays were developed and/or the performance characteristics CLIA# 11D-2097795
+determined by Diagnostic Solutions Laboratory. Medical Director - Diane Farhi, MD
+5

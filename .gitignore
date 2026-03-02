@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Data
+data/uploads/
+data/output/
+data/client_protocols/
+data/lab_reports/parsed/
+data/*.json
+data/*.txt
+
+# Vector DB
+vectordb/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
