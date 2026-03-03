@@ -23,5 +23,8 @@ RUN pip install -r requirements.txt
 # Copy all project files
 COPY . .
 
-# Start command: run pipeline with Jessica intake (file must be in repo at data/jessica_intake.pdf)
-CMD ["python", "src/main.py", "data/jessica_intake.pdf"]
+# Run pipeline once (Jessica intake), then start API so Render sees a long-running service
+RUN chmod +x scripts/start.sh
+ENV PORT=8000
+EXPOSE 8000
+CMD ["sh", "scripts/start.sh"]
