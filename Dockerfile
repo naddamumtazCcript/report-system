@@ -23,5 +23,8 @@ RUN pip install -r requirements.txt
 # Copy all project files
 COPY . .
 
-# Command to run your app
-CMD ["python", "src/main.py", "data/sample_intake.pdf"]
+# Run FastAPI (not CLI). PYTHONPATH so "api.app" resolves; cwd stays /app for templates/data.
+ENV PYTHONPATH=/app/src
+ENV PORT=8000
+EXPOSE 8000
+CMD ["sh", "-c", "exec python -m uvicorn api.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
