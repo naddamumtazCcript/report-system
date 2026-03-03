@@ -23,8 +23,5 @@ RUN pip install -r requirements.txt
 # Copy all project files
 COPY . .
 
-# Run FastAPI (not CLI). PYTHONPATH so "api.app" resolves; cwd stays /app for templates/data.
-ENV PYTHONPATH=/app/src
-ENV PORT=8000
-EXPOSE 8000
-CMD ["sh", "-c", "exec python -m uvicorn api.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Start command: run pipeline with Jessica intake (file must be in repo at data/jessica_intake.pdf)
+CMD ["python", "src/main.py", "data/jessica_intake.pdf"]
