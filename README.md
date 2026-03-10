@@ -12,6 +12,8 @@ Converts client-filled PDF questionnaires into complete, personalized health pro
 - **AI Data Mapping** - Converts unstructured text to structured JSON
 - **Pattern Detection** - Identifies client health patterns (PCOS, gut issues, stress, etc.)
 - **Smart Recommendations** - AI generates personalized nutrition, supplement, and lifestyle plans
+- **Lab Report Integration** - Supports DUTCH, GI-MAP, Functional Bloodwork
+- **Cloud Storage** - PDFs stored on Cloudinary CDN
 - **Token Tracking** - Monitors OpenAI API usage and costs
 - **Error Handling** - Production-ready error handling and logging
 
@@ -38,10 +40,20 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-2. **Configure API key**
+2. **Configure API keys**
 Create `.env` file:
 ```
 OPENAI_API_KEY=your-api-key-here
+GEMINI_API_KEY=your-gemini-key-here
+DATABASE_URL=your-postgres-url
+CLOUD_NAME=your-cloudinary-name
+CLOUDINARY_API_KEY=your-cloudinary-key
+CLOUDINARY_API_SECRET=your-cloudinary-secret
+```
+
+3. **Setup Cloudinary (for PDF storage)**
+```bash
+bash scripts/setup_cloudinary.sh
 ```
 
 3. **Run pipeline**
@@ -105,7 +117,9 @@ python tests/test_error_handling.py
 ## Documentation
 
 - `PROJECT_STRUCTURE.md` - Detailed architecture
-- `MODULAR_REFACTORING_SUMMARY.md` - Token analysis & optimization
+- `CLOUDINARY_MIGRATION.md` - Cloudinary setup guide
+- `CLOUDINARY_QUICKSTART.md` - Quick start for Cloudinary
+- `MIGRATION_SUMMARY.md` - Migration summary
 - `ERROR_REFERENCE.md` - Error troubleshooting guide
 - `tests/VALIDATION_REPORT.md` - Test results
 - `tests/ERROR_HANDLING_SUMMARY.md` - Error handling details
@@ -114,6 +128,11 @@ python tests/test_error_handling.py
 
 - Python 3.10+
 - OpenAI GPT-4o-mini
+- Google Gemini (lab extraction)
+- FastAPI (REST API)
+- PostgreSQL/Neon (database)
+- Cloudinary (PDF storage)
+- ChromaDB (vector database)
 - pdfplumber (PDF extraction)
 - python-dotenv (environment management)
 
@@ -123,4 +142,6 @@ python tests/test_error_handling.py
 ✅ 100% test coverage  
 ✅ Comprehensive error handling  
 ✅ Token tracking & cost monitoring  
+✅ Cloud PDF storage (Cloudinary)  
+✅ Lab report integration (DUTCH, GI-MAP, Bloodwork)  
 ✅ 92% under budget estimate

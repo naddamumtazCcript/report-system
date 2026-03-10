@@ -8,6 +8,7 @@ fastapi==0.115.6
 uvicorn==0.34.0
 python-multipart==0.0.20
 requests==2.32.3
+psycopg2-binary==2.9.9
 
 # PDF/DOCX export
 reportlab==4.2.5
@@ -17,3 +18,9 @@ markdown2==2.5.1
 # Vector database
 chromadb==0.5.23
 numpy==1.26.4
+
+# Google Gemini AI
+google-genai>=0.2.0
+
+# Cloud storage
+cloudinary==1.41.0

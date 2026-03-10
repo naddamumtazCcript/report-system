@@ -7,6 +7,7 @@ from pathlib import Path
 from core.pdf_extractor import PDFExtractor
 from core.data_mapper import extract_data
 from core.template_populator import populate
+from core.schema import LabData
 from utils.error_handler import (
     ReportSystemError, PDFExtractionError, DataMappingError, 
     TemplatePopulationError, ConfigurationError, logger
@@ -22,18 +23,21 @@ def run_pipeline(pdf_path, template_path, output_path, lab_files=None):
         # Extract and analyze lab reports if provided
         lab_data = None
         if lab_files:
-            from core.lab_extractor import extract_multiple_lab_reports
-            from ai.lab_analyzer import analyze_multiple_lab_reports
+            from ai.gemini_lab_extractor import analyze_lab_with_gemini
             
             logger.info(f"Extracting {len(lab_files)} lab report(s)...")
             print(f"\n📋 Extracting {len(lab_files)} lab report(s)...")
             
-            extract_multiple_lab_reports(lab_files)
+            all_reports = []
+            for lab_file in lab_files:
+                logger.info(f"Processing {lab_file}...")
+                result = analyze_lab_with_gemini(lab_file)
+                all_reports.extend(result.reports)
             
-            logger.info("Analyzing lab reports with AI...")
-            print("🧬 Analyzing lab reports with AI...")
-            
-            lab_data = analyze_multiple_lab_reports()
+            lab_data = LabData(
+                reports=all_reports,
+                summary=f"Analyzed {len(lab_files)} lab report(s) with {sum(len(r.results) for r in all_reports)} total markers."
+            )
             print(f"✓ Lab analysis complete: {lab_data.summary}\n")
         
         # Step 1: Extract text from PDF
