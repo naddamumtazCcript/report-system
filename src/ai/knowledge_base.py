@@ -35,14 +35,33 @@ def calculate_macros(weight_lbs, dee, goal="maintenance"):
     return {"calories": calories, "protein_g": protein_g, "carbs_g": carb_g, "fat_g": fat_g, "fiber_g": 30}
 
 def get_nutrition_recommendations(client_data):
-    weight_lbs = int(''.join(filter(str.isdigit, client_data.get('personal_info', {}).get('current_weight', '165'))))
+    # Get weight with fallback
+    weight_str = client_data.get('personal_info', {}).get('current_weight', '165')
+    weight_digits = ''.join(filter(str.isdigit, weight_str))
+    weight_lbs = int(weight_digits) if weight_digits else 165
+    
+    # Get height with fallback
     height_str = client_data.get('personal_info', {}).get('height', "5'6\"")
-    feet = int(height_str.split("'")[0]) if "'" in height_str else 5
-    inches = int(''.join(filter(str.isdigit, height_str.split("'")[1]))) if "'" in height_str else 6
+    if "'" in height_str:
+        parts = height_str.split("'")
+        feet = int(''.join(filter(str.isdigit, parts[0]))) if parts[0] else 5
+        inches_str = ''.join(filter(str.isdigit, parts[1])) if len(parts) > 1 else '6'
+        inches = int(inches_str) if inches_str else 6
+    else:
+        feet = 5
+        inches = 6
     height_inches = (feet * 12) + inches
+    
+    # Get age with fallback
     dob_str = client_data.get('personal_info', {}).get('date_of_birth', '03/15/1985')
-    age = 2026 - int(dob_str.split('/')[-1]) if '/' in dob_str else 35
-    gender = client_data.get('personal_info', {}).get('gender', 'Female')
+    if '/' in dob_str and dob_str.split('/')[-1]:
+        year_str = dob_str.split('/')[-1]
+        age = 2026 - int(year_str) if year_str.isdigit() else 35
+    else:
+        age = 35
+    
+    gender = client_data.get('personal_info', {}).get('gender', 'Female') or 'Female'
+    
     bmr = calculate_bmr(weight_lbs, height_inches, age, gender)
     dee = calculate_dee(bmr, "moderate")
     macros = calculate_macros(weight_lbs, dee, "maintenance")
