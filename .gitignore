@@ -8,27 +8,31 @@ venv/
 env/
 ENV/
 
-# Environment
-.env
-
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Data
-data/uploads/
-data/output/
-data/client_protocols/
-data/lab_reports/parsed/
-data/*.json
-data/*.txt
+# Environment
+.env
+.env.local
 
-# Vector DB
-vectordb/
+# Data directories
+data/uploads/*
+data/output/*
+src/data/uploads/*
+src/data/output/*
+!data/uploads/.gitkeep
+!data/output/.gitkeep
 
 # Logs
-logs/
-*.log
+src/logs/*.log
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Test outputs
+*.json.test
+test_*.json

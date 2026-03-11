@@ -11,7 +11,7 @@ if str(src_path) not in sys.path:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import library, protocol, upload, generate, export_pdf, export_docx, client, generate_comprehensive, practitioner
+from api.routes import library, protocol, upload, generate, export_pdf, export_docx, client, generate_comprehensive, practitioner, lab_extraction, pdf_to_json
 
 app = FastAPI(
     title="Be Balanced Protocol API",
@@ -45,6 +45,12 @@ app.include_router(generate_comprehensive.router, prefix="/api", tags=["Comprehe
 
 # Practitioner Agent
 app.include_router(practitioner.router, prefix="/api", tags=["Practitioner Agent"])
+
+# Lab Extraction
+app.include_router(lab_extraction.router, prefix="/api", tags=["Lab Extraction"])
+
+# PDF to JSON Converter
+app.include_router(pdf_to_json.router, prefix="/api", tags=["PDF to JSON"])
 
 @app.get("/")
 async def root():
