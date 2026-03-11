@@ -54,31 +54,38 @@ async def get_available_templates():
 @router.post("/generate-protocol")
 async def generate_comprehensive_protocol(
     patient_id: str = Form(...),
-    template_type: str = Form(...),
+    template_type: Optional[str] = Form(None),
     intake_file: UploadFile = File(...),
-    selected_libraries: str = Form(...),  # JSON string array
+    selected_libraries: Optional[str] = Form(None),
     lab_files: Optional[List[UploadFile]] = File(None),
+    doc_types: Optional[str] = Form(None),
+    libraries: Optional[str] = Form(None),
+    template: Optional[str] = Form(None),
     include_lab_analysis: bool = Form(True),
-    practitioner_notes: Optional[str] = Form(None)
+    practitioner_notes: Optional[str] = Form(None),
+    user_id: Optional[str] = Form(None),
+    client_id: Optional[str] = Form(None)
 ):
     """
     Comprehensive protocol generation endpoint
     
-    Handles all 5 steps in one atomic operation:
-    1. Patient selection (patient_id)
-    2. Template selection (template_type)
-    3. Intake questionnaire (intake_file)
-    4. Lab results (lab_files - optional)
-    5. Reference libraries (selected_libraries)
+    Supports two modes:
+    1. File-based: Uses template_type and selected_libraries (legacy)
+    2. JSON-based: Uses libraries and template as JSON objects (new)
     
     Args:
         patient_id: Unique patient identifier
-        template_type: Clinical template (standard_protocol, deep_analysis, quick_scan)
+        template_type: Clinical template (standard_protocol, deep_analysis, quick_scan) - File mode
         intake_file: Patient intake questionnaire PDF
-        selected_libraries: JSON array of library names to use
+        selected_libraries: JSON array of library names - File mode
         lab_files: Optional list of lab report PDFs
+        doc_types: JSON array mapping lab files to types ["dutch", "gi_map", "bloodwork"]
+        libraries: JSON object with library data - JSON mode
+        template: JSON object with template structure - JSON mode
         include_lab_analysis: Whether to include lab analysis
         practitioner_notes: Optional notes from practitioner
+        user_id: Practitioner ID
+        client_id: Client ID
     
     Returns:
         Complete protocol with metadata
@@ -100,22 +107,40 @@ async def generate_comprehensive_protocol(
         # STEP 1: VALIDATION
         # ============================================================
         logger.info(f"[{job_id}] Starting protocol generation")
-        logger.info(f"[{job_id}] Patient: {patient_id}, Template: {template_type}")
+        logger.info(f"[{job_id}] Patient: {patient_id}")
         
-        # Validate template type
-        if not validate_template_type(template_type):
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid template type: {template_type}. Must be one of: {list(TemplateType.__members__.values())}"
-            )
+        # Detect mode
+        is_json_mode = libraries is not None and template is not None
         
-        # Parse selected libraries
-        try:
-            libraries = json.loads(selected_libraries)
-            if not isinstance(libraries, list):
-                raise ValueError("selected_libraries must be an array")
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=400, detail="Invalid selected_libraries format. Must be JSON array.")
+        if is_json_mode:
+            logger.info(f"[{job_id}] Mode: JSON-based")
+            # Parse JSON inputs
+            try:
+                libraries_json = json.loads(libraries)
+                template_json = json.loads(template)
+            except json.JSONDecodeError as e:
+                raise HTTPException(status_code=400, detail=f"Invalid JSON format: {e}")
+        else:
+            logger.info(f"[{job_id}] Mode: File-based, Template: {template_type}")
+            # Validate template type
+            if not template_type:
+                raise HTTPException(status_code=400, detail="template_type is required for file-based mode")
+            if not validate_template_type(template_type):
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid template type: {template_type}. Must be one of: {list(TemplateType.__members__.values())}"
+                )
+            
+            # Parse selected libraries
+            if selected_libraries:
+                try:
+                    libraries_list = json.loads(selected_libraries)
+                    if not isinstance(libraries_list, list):
+                        raise ValueError("selected_libraries must be an array")
+                except json.JSONDecodeError:
+                    raise HTTPException(status_code=400, detail="Invalid selected_libraries format. Must be JSON array.")
+            else:
+                libraries_list = []
         
         # Validate intake file
         if not intake_file.filename.endswith('.pdf'):
@@ -137,19 +162,52 @@ async def generate_comprehensive_protocol(
         
         # Save lab PDFs (if provided)
         lab_paths = []
+        lab_data = None
         if lab_files and include_lab_analysis:
-            for i, lab_file in enumerate(lab_files):
-                if not lab_file.filename.endswith('.pdf'):
-                    logger.warning(f"[{job_id}] Skipping non-PDF lab file: {lab_file.filename}")
-                    continue
+            if doc_types:
+                # JSON mode with explicit doc types
+                doc_types_list = json.loads(doc_types)
+                if len(lab_files) != len(doc_types_list):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Number of lab PDFs must match number of doc_types"
+                    )
                 
-                lab_path = UPLOAD_DIR / f"{job_id}_lab_{i}.pdf"
-                with open(lab_path, "wb") as f:
-                    lab_content = await lab_file.read()
-                    f.write(lab_content)
-                lab_paths.append(str(lab_path))
-            
-            logger.info(f"[{job_id}] {len(lab_paths)} lab PDFs saved")
+                from ai.gemini_lab_extractor import analyze_lab_with_gemini
+                from core.schema import LabData
+                
+                all_reports = []
+                for i, (lab_file, doc_type) in enumerate(zip(lab_files, doc_types_list)):
+                    if not lab_file.filename.endswith('.pdf'):
+                        logger.warning(f"[{job_id}] Skipping non-PDF lab file: {lab_file.filename}")
+                        continue
+                    
+                    lab_path = UPLOAD_DIR / f"{job_id}_lab_{i}_{doc_type}.pdf"
+                    with open(lab_path, "wb") as f:
+                        lab_content = await lab_file.read()
+                        f.write(lab_content)
+                    
+                    lab_result = analyze_lab_with_gemini(str(lab_path))
+                    if lab_result and lab_result.reports:
+                        all_reports.extend(lab_result.reports)
+                    lab_paths.append(str(lab_path))
+                
+                lab_data = LabData(reports=all_reports, summary="") if all_reports else None
+                logger.info(f"[{job_id}] {len(lab_paths)} lab PDFs processed with Gemini")
+            else:
+                # Legacy mode - auto-detect
+                for i, lab_file in enumerate(lab_files):
+                    if not lab_file.filename.endswith('.pdf'):
+                        logger.warning(f"[{job_id}] Skipping non-PDF lab file: {lab_file.filename}")
+                        continue
+                    
+                    lab_path = UPLOAD_DIR / f"{job_id}_lab_{i}.pdf"
+                    with open(lab_path, "wb") as f:
+                        lab_content = await lab_file.read()
+                        f.write(lab_content)
+                    lab_paths.append(str(lab_path))
+                
+                logger.info(f"[{job_id}] {len(lab_paths)} lab PDFs saved")
         
         # ============================================================
         # STEP 3: PDF EXTRACTION
@@ -185,10 +243,9 @@ async def generate_comprehensive_protocol(
         logger.info(f"[{job_id}] Data mapping completed")
         
         # ============================================================
-        # STEP 5: LAB ANALYSIS (if provided)
+        # STEP 5: LAB ANALYSIS (if provided and not already processed)
         # ============================================================
-        lab_data = None
-        if lab_paths and include_lab_analysis:
+        if lab_paths and include_lab_analysis and not lab_data:
             processing_steps["lab_analysis"] = "in_progress"
             logger.info(f"[{job_id}] Analyzing {len(lab_paths)} lab reports...")
             
@@ -205,18 +262,20 @@ async def generate_comprehensive_protocol(
                 logger.error(f"[{job_id}] Lab analysis failed: {e}")
                 processing_steps["lab_analysis"] = "failed"
                 # Continue without lab data
+        elif lab_data:
+            processing_steps["lab_analysis"] = "completed"
         else:
             processing_steps["lab_analysis"] = "skipped"
         
         # ============================================================
-        # STEP 6: AI RECOMMENDATIONS (using selected libraries)
+        # STEP 6: AI RECOMMENDATIONS
         # ============================================================
         processing_steps["ai_recommendations"] = "in_progress"
-        logger.info(f"[{job_id}] Generating AI recommendations using libraries: {libraries}")
         
-        # Note: Library selection is handled internally by template_populator
-        # which calls knowledge_base functions that use library_loader
-        # For now, we pass the libraries as metadata
+        if is_json_mode:
+            logger.info(f"[{job_id}] Generating AI recommendations using JSON libraries")
+        else:
+            logger.info(f"[{job_id}] Generating AI recommendations using libraries: {libraries_list}")
         
         processing_steps["ai_recommendations"] = "completed"
         logger.info(f"[{job_id}] AI recommendations completed")
@@ -225,16 +284,31 @@ async def generate_comprehensive_protocol(
         # STEP 7: TEMPLATE POPULATION
         # ============================================================
         processing_steps["template_population"] = "in_progress"
-        logger.info(f"[{job_id}] Populating {template_type} template...")
-        
-        # Get template path
-        template_path = get_template_path(template_type)
         
         # Generate output file
         output_file = OUTPUT_DIR / f"{job_id}_protocol.md"
         
-        # Populate template
-        populate(str(template_path), str(json_file), str(output_file), lab_data)
+        if is_json_mode:
+            logger.info(f"[{job_id}] Populating JSON template...")
+            from core.template_populator_json import populate_json
+            
+            populate_json(
+                template_json=template_json,
+                client_data=client_data,
+                libraries_json=libraries_json,
+                output_path=str(output_file),
+                lab_data=lab_data,
+                user_id=user_id,
+                client_id=client_id
+            )
+        else:
+            logger.info(f"[{job_id}] Populating {template_type} template...")
+            
+            # Get template path
+            template_path = get_template_path(template_type)
+            
+            # Populate template
+            populate(str(template_path), str(json_file), str(output_file), lab_data)
         
         processing_steps["template_population"] = "completed"
         logger.info(f"[{job_id}] Template population completed")
@@ -256,14 +330,21 @@ async def generate_comprehensive_protocol(
         processing_time = time.time() - start_time
         
         # Get template metadata
-        template_meta = get_template_metadata(template_type)
+        if is_json_mode:
+            template_meta = {"name": "Custom JSON Template", "description": "JSON-based template"}
+            libraries_used = list(libraries_json.keys()) if libraries_json else []
+        else:
+            template_meta = get_template_metadata(template_type)
+            libraries_used = libraries_list
         
         # Build response
         response = {
             "status": "success",
             "job_id": job_id,
             "patient_id": patient_id,
-            "template_type": template_type,
+            "template_type": template_type if not is_json_mode else "json_template",
+            "user_id": user_id,
+            "client_id": client_id,
             "processing_steps": processing_steps,
             "output": {
                 "protocol_file": str(output_file),
@@ -272,9 +353,10 @@ async def generate_comprehensive_protocol(
                 "download_url": f"/api/download/{job_id}"
             },
             "metadata": {
+                "mode": "json" if is_json_mode else "file",
                 "template_name": template_meta["name"],
                 "template_description": template_meta["description"],
-                "libraries_used": libraries,
+                "libraries_used": libraries_used,
                 "lab_reports_processed": len(lab_paths) if lab_paths else 0,
                 "processing_time": f"{processing_time:.2f}s",
                 "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
