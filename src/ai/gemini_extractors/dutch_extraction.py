@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from core.schema import LabResult
+from ai.lab_analyzer import analyze_lab_results
 
 load_dotenv()
 
@@ -75,7 +77,57 @@ def extract_dutch_test(file_path: str):
             ),
         )
         print(f"[DEBUG] Gemini response received successfully")
-        return response.parsed
+        parsed_data = response.parsed
+        
+        # Convert to LabResult objects and analyze
+        lab_results = []
+        
+        # Process all biomarkers from different sections
+        all_biomarkers = []
+        
+        # Sex hormones
+        all_biomarkers.extend(parsed_data.sex_hormones.progesterone_metabolites)
+        all_biomarkers.extend(parsed_data.sex_hormones.estrogens_and_metabolites)
+        all_biomarkers.extend(parsed_data.sex_hormones.metabolite_ratios)
+        all_biomarkers.extend(parsed_data.sex_hormones.androgens_and_metabolites)
+        
+        # Adrenal hormones
+        all_biomarkers.extend(parsed_data.adrenal_hormones.daily_free_cortisol_cortisone)
+        all_biomarkers.extend(parsed_data.adrenal_hormones.creatinine)
+        all_biomarkers.extend(parsed_data.adrenal_hormones.cortisol_metabolites_dheas)
+        
+        # Organic acids
+        all_biomarkers.extend(parsed_data.organic_acids.nutritional_markers)
+        all_biomarkers.extend(parsed_data.organic_acids.neuro_related_markers)
+        all_biomarkers.extend(parsed_data.organic_acids.additional_markers)
+        
+        # Convert to LabResult format
+        for biomarker in all_biomarkers:
+            # Determine flag from range_flag
+            flag = "Normal"
+            if biomarker.range_flag:
+                range_flag_lower = biomarker.range_flag.lower()
+                if "above" in range_flag_lower or "high" in range_flag_lower:
+                    flag = "H"
+                elif "below" in range_flag_lower or "low" in range_flag_lower:
+                    flag = "L"
+            
+            lab_result = LabResult(
+                test_name=biomarker.marker_name,
+                value=biomarker.result_value,
+                unit=biomarker.units,
+                reference_range=biomarker.normal_range,
+                flag=flag,
+                summary=None
+            )
+            lab_results.append(lab_result)
+        
+        # Analyze results and add summaries for out-of-range markers
+        print("[DEBUG] Analyzing DUTCH results for out-of-range markers...")
+        lab_results = analyze_lab_results(lab_results)
+        
+        return parsed_data, lab_results
+        
     except Exception as e:
         print(f"[DEBUG] Gemini API error: {type(e).__name__}")
         print(f"[DEBUG] Error message: {str(e)}")

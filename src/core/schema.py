@@ -12,6 +12,7 @@ class LabResult:
     unit: str
     reference_range: str
     flag: str  # "High", "Low", "Normal", "Out of Range"
+    summary: Optional[str] = None  # AI-generated summary for out-of-range markers
 
 @dataclass
 class LabReport:

@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from db.database import get_db_connection
 from core.pdf_extractor import PDFExtractor
 from core.data_mapper import extract_data
-from core.template_populator import populate
+from core.html_pdf_generator import generate_protocol_pdf
 from ai.gemini_lab_extractor import analyze_lab_with_gemini
 from utils.cloudinary_helper import upload_pdf_bytes
 
@@ -79,26 +79,18 @@ async def generate_protocol(
                 "data": lab_result.model_dump() if hasattr(lab_result, 'model_dump') else lab_result
             })
         
-        # Generate protocol
-        template_path = "/Users/rizwanhabib/Desktop/hassaanccript/new/report-system/templates/ProtocolTemplate.md"
-        json_file = f"src/data/uploads/{user_id}_data.json"
+        # Generate protocol PDF
+        output_file = f"src/data/uploads/{user_id}_protocol.pdf"
         
-        with open(json_file, 'w') as f:
-            json.dump(intake_data, f, indent=2)
+        protocol_data = {
+            'client_name': f"{intake_data.get('personal_info', {}).get('legal_first_name', '')} {intake_data.get('personal_info', {}).get('last_name', '')}".strip() or 'Client',
+            'health_info': intake_data.get('health_info', {}),
+            'lab_review_content': json.dumps(lab_data_list) if lab_data_list else ''
+        }
         
-        output_file = f"src/data/uploads/{user_id}_protocol.md"
+        generate_protocol_pdf(protocol_data, output_file)
         
-        # Combine lab data for template
-        from core.schema import LabData, LabReport
-        combined_labs = LabData(reports=[], summary="")
-        for lab in lab_data_list:
-            if isinstance(lab['data'], LabData):
-                combined_labs.reports.extend(lab['data'].reports)
-        
-        populate(template_path, json_file, output_file, combined_labs if combined_labs.reports else None)
-        
-        # Read generated protocol
-        with open(output_file, 'r') as f:
+        with open(output_file.replace('.pdf', '.html'), 'r') as f:
             protocol_markdown = f.read()
         
         # Save to DB
@@ -187,58 +179,35 @@ async def finalize_protocol(protocol_id: int):
     Finalize protocol: generate PDF and update status
     """
     try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.units import inch
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
         from io import BytesIO
+        import tempfile, os
         
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Get protocol
         cur.execute('SELECT status, protocol FROM "Protocol" WHERE id = %s', (protocol_id,))
         row = cur.fetchone()
         
         if not row:
             raise HTTPException(status_code=404, detail="Protocol not found")
-        
         if row['status'] != 'draft':
             raise HTTPException(status_code=400, detail="Protocol already finalized")
         
-        markdown = row['protocol']['markdown']
+        protocol_data = row['protocol']
         
-        # Generate PDF
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
-        styles = getSampleStyleSheet()
-        story = []
+        # Generate PDF using html_pdf_generator
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
+            tmp_path = tmp.name
         
-        for line in markdown.split('\n'):
-            line = line.strip()
-            if not line:
-                story.append(Spacer(1, 0.2*inch))
-            elif line.startswith('# '):
-                story.append(Paragraph(line[2:], styles['Title']))
-                story.append(Spacer(1, 0.3*inch))
-            elif line.startswith('## '):
-                story.append(Paragraph(line[3:], styles['Heading1']))
-                story.append(Spacer(1, 0.2*inch))
-            elif line.startswith('### '):
-                story.append(Paragraph(line[4:], styles['Heading2']))
-                story.append(Spacer(1, 0.1*inch))
-            elif line.startswith(('* ', '- ')):
-                story.append(Paragraph('• ' + line[2:], styles['Normal']))
-            elif line != '---':
-                story.append(Paragraph(line, styles['Normal']))
+        generate_protocol_pdf(protocol_data, tmp_path)
         
-        doc.build(story)
-        pdf_bytes = buffer.getvalue()
+        with open(tmp_path, 'rb') as f:
+            pdf_bytes = f.read()
+        os.unlink(tmp_path)
         
         # Upload to Cloudinary
         cloudinary_result = upload_pdf_bytes(pdf_bytes, f"protocol_{protocol_id}")
         
-        # Update DB with Cloudinary URL
         cur.execute(
             'UPDATE "Protocol" SET status = %s, pdf_url = %s WHERE id = %s',
             ('final', cloudinary_result['url'], protocol_id)

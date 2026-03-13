@@ -1,0 +1,69 @@
+{
+  "purpose": "Guide AI in translating client intake data, lab patterns, and symptom priorities into clear, educational, and supportive supplement protocol",
+  "core_rules": [
+    "Food and lifestyle come first",
+    "Fewer supplements > more supplements",
+    "Every supplement must have a purpose",
+    "Duration must be stated",
+    "Pause before adding",
+    "One new supplement at a time",
+    "Never imply treatment or cure",
+    "Always include physician disclaimer"
+  ],
+  "standard_flow": [
+    "Supplements to Pause or Adjust",
+    "Active Supplements (with purpose + duration)",
+    "Titration Schedule (if applicable)",
+    "Re-evaluation Criteria"
+  ],
+  "patterns": {
+    "blood_sugar_pcos": {
+      "triggers": ["PCOS pattern", "Elevated androgens", "Blood sugar dysregulation", "Cravings or energy crashes"],
+      "category": "Inositol-based support",
+      "language": "Supports insulin sensitivity and ovarian signaling",
+      "options": ["Inositol (myo + d-chiro blend)", "Omega-3s (as metabolic support)"],
+      "rules": ["Do not combine multiple insulin-modulating supplements unnecessarily", "Always pair with nutrition changes"]
+    },
+    "estrogen_metabolism": {
+      "triggers": ["Slow Phase 2 detox markers", "Estrogen recirculation symptoms", "Bloating, cramping, heavy periods"],
+      "category": "Phase 2 detox support",
+      "language": "Supports packaging and elimination of estrogen",
+      "rules": ["Avoid estrogen-lowering agents when estrogen is already low", "Fiber and food-first emphasis must be present"]
+    },
+    "progesterone_support": {
+      "triggers": ["Low progesterone", "Anovulatory cycles", "Sleep disruption", "High stress sensitivity"],
+      "category": "Cycle-supportive nutrients",
+      "language": "Supports progesterone pathways and cycle regulation",
+      "rules": ["Ovulation support > direct hormone suppression", "Avoid stacking conflicting hormone-active supplements"]
+    },
+    "androgen_modulation": {
+      "triggers": ["Acne (jawline, chin)", "Hair shedding", "Elevated androgen labs", "PCOS pattern"],
+      "category": "Androgen-modulating botanicals or nutrients",
+      "language": "May help reduce androgen activity",
+      "rules": ["Avoid aggressive suppression", "Pair with blood sugar and stress strategies"]
+    },
+    "cortisol_stress": {
+      "triggers": ["Poor stress tolerance", "Sleep disruption", "Low cortisol clearance markers"],
+      "category": "Adaptogenic or metabolic cortisol support",
+      "language": "Supports cortisol metabolism and stress resilience",
+      "rules": ["Lifestyle interventions must be listed alongside supplements", "Avoid stimulating compounds when sleep is disrupted"]
+    },
+    "gut_digestive": {
+      "triggers": ["Bloating", "Gas", "GI discomfort", "Elimination diet in place"],
+      "category": "Digestive support and microbiome balance",
+      "language": "Supports gut barrier and microbiome balance",
+      "rules": ["Time-bound usage preferred", "Re-evaluate after 8–12 weeks"]
+    },
+    "detox_antioxidant": {
+      "triggers": ["Low glutathione markers", "Oxidative stress patterns", "Inflammation"],
+      "category": "Antioxidant precursors",
+      "language": "Supports antioxidant capacity and detoxification",
+      "rules": ["Pair with hydration and fiber", "Avoid aggressive detox language"]
+    }
+  },
+  "duration_types": {
+    "ongoing": "foundational support (e.g., omega-3s)",
+    "time_bound": "6–12 weeks for targeted protocols",
+    "re_evaluate": "symptoms, tolerance, and labs before continuing"
+  }
+}

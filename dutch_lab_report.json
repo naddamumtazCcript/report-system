@@ -1,0 +1,192 @@
+{
+  "reports": [
+    {
+      "report_date": "",
+      "report_type": "DUTCH Complete",
+      "results": [
+        {
+          "test_name": "b-Pregnanediol",
+          "value": "1688.3",
+          "unit": "ng/mg",
+          "reference_range": "600 - 2000",
+          "flag": "Within luteal range"
+        },
+        {
+          "test_name": "a-Pregnanediol",
+          "value": "444.2",
+          "unit": "ng/mg",
+          "reference_range": "200 - 740",
+          "flag": "Within luteal range"
+        },
+        {
+          "test_name": "Estrone (E1)",
+          "value": "30.28",
+          "unit": "ng/mg",
+          "reference_range": "12-26",
+          "flag": "Above luteal range"
+        },
+        {
+          "test_name": "Estradiol (E2)",
+          "value": "4.61",
+          "unit": "ng/mg",
+          "reference_range": "1.8-4.5",
+          "flag": "Above luteal range"
+        },
+        {
+          "test_name": "Estriol (E3)",
+          "value": "15.8",
+          "unit": "ng/mg",
+          "reference_range": "5-18",
+          "flag": "High end of luteal range"
+        },
+        {
+          "test_name": "2-OH-E1",
+          "value": "13.48",
+          "unit": "ng/mg",
+          "reference_range": "5.1-13.1",
+          "flag": "Above luteal range"
+        },
+        {
+          "test_name": "4-OH-E1",
+          "value": "1.77",
+          "unit": "ng/mg",
+          "reference_range": "0-1.8",
+          "flag": "High end of luteal range"
+        },
+        {
+          "test_name": "16-OH-E1",
+          "value": "2.46",
+          "unit": "ng/mg",
+          "reference_range": "0.7 - 2.6",
+          "flag": "High end of luteal range"
+        },
+        {
+          "test_name": "2-Methoxy-E1",
+          "value": "8.51",
+          "unit": "ng/mg",
+          "reference_range": "2.5 - 6.5",
+          "flag": "Above luteal range"
+        },
+        {
+          "test_name": "2-OH-E2",
+          "value": "3.57",
+          "unit": "ng/mg",
+          "reference_range": "0-3.1",
+          "flag": "Above luteal range"
+        },
+        {
+          "test_name": "4-OH-E2",
+          "value": "0.47",
+          "unit": "ng/mg",
+          "reference_range": "0 -0.52",
+          "flag": "High end of luteal range"
+        },
+        {
+          "test_name": "Total Estrogen",
+          "value": "80.9",
+          "unit": "ng/mg",
+          "reference_range": "35-70",
+          "flag": "Above range"
+        },
+        {
+          "test_name": "Cortisol (U1) - Waking",
+          "value": "35.0",
+          "unit": "ng/mg",
+          "reference_range": "10-50",
+          "flag": "Within range"
+        },
+        {
+          "test_name": "Cortisol (U2) - +2 Hours",
+          "value": "98.0",
+          "unit": "ng/mg",
+          "reference_range": "30-130",
+          "flag": "Within range"
+        },
+        {
+          "test_name": "Cortisol (U3) - Dinner",
+          "value": "43.3",
+          "unit": "ng/mg",
+          "reference_range": "7-30",
+          "flag": "Above range"
+        },
+        {
+          "test_name": "Cortisol (U4) - Bedtime",
+          "value": "15.3",
+          "unit": "ng/mg",
+          "reference_range": "0-14",
+          "flag": "Above range"
+        },
+        {
+          "test_name": "Cortisone (U1) - Waking",
+          "value": "61.7",
+          "unit": "ng/mg",
+          "reference_range": "40-120",
+          "flag": "Within range"
+        },
+        {
+          "test_name": "Cortisone (U2) - +2 Hours",
+          "value": "131.4",
+          "unit": "ng/mg",
+          "reference_range": "90-230",
+          "flag": "Within range"
+        },
+        {
+          "test_name": "Cortisone (U3) - Dinner",
+          "value": "113.9",
+          "unit": "ng/mg",
+          "reference_range": "32-110",
+          "flag": "Above range"
+        },
+        {
+          "test_name": "Cortisone (U4) - Bedtime",
+          "value": "45.2",
+          "unit": "ng/mg",
+          "reference_range": "0-55",
+          "flag": "Within range"
+        },
+        {
+          "test_name": "24 Hour Free Cortisol (Sum of all Values)",
+          "value": "191.6",
+          "unit": "ng/mg",
+          "reference_range": "65-200",
+          "flag": "High end of range"
+        },
+        {
+          "test_name": "24 Hour Free Cortisone (Sum of all Values)",
+          "value": "352.2",
+          "unit": "ng/mg",
+          "reference_range": "220 - 450",
+          "flag": "Within range"
+        }
+      ],
+      "key_findings": [
+        "Patient: Female, Age: 34"
+      ],
+      "abnormal_markers": [
+        "b-Pregnanediol",
+        "a-Pregnanediol",
+        "Estrone (E1)",
+        "Estradiol (E2)",
+        "Estriol (E3)",
+        "2-OH-E1",
+        "4-OH-E1",
+        "16-OH-E1",
+        "2-Methoxy-E1",
+        "2-OH-E2",
+        "4-OH-E2",
+        "Total Estrogen",
+        "Cortisol (U1) - Waking",
+        "Cortisol (U2) - +2 Hours",
+        "Cortisol (U3) - Dinner",
+        "Cortisol (U4) - Bedtime",
+        "Cortisone (U1) - Waking",
+        "Cortisone (U2) - +2 Hours",
+        "Cortisone (U3) - Dinner",
+        "Cortisone (U4) - Bedtime",
+        "24 Hour Free Cortisol (Sum of all Values)",
+        "24 Hour Free Cortisone (Sum of all Values)"
+      ]
+    }
+  ],
+  "summary": "DUTCH Complete analysis for Female patient, age 34. 22 markers extracted."
+}

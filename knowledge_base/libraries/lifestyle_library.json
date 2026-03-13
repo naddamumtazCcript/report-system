@@ -1,0 +1,81 @@
+{
+  "purpose": "Guide AI in translating client intake data, lab patterns, and symptom priorities into supportive, sustainable fitness and lifestyle strategy",
+  "core_rules": [
+    "Recovery > intensity",
+    "Consistency beats optimization",
+    "Strength training is foundational",
+    "Walking is non-negotiable",
+    "Nervous system regulation is required",
+    "Avoid extremes",
+    "Lifestyle supports fitness, not the other way around",
+    "Everything is phase-dependent"
+  ],
+  "standard_flow": [
+    "Primary Goal (metabolic, muscle, stress, recovery)",
+    "Movement Strategy",
+    "Daily Activity Targets",
+    "Nervous System & Stress Support",
+    "Sleep & Circadian Rhythm Support",
+    "Guardrails (what to avoid)",
+    "Re-evaluation Criteria"
+  ],
+  "patterns": {
+    "pcos_metabolic": {
+      "triggers": ["PCOS pattern", "Insulin resistance", "Energy crashes", "Weight loss resistance"],
+      "strategy": "Strength training + walking, Minimal high-intensity cardio",
+      "language": "Supports insulin sensitivity and metabolic health",
+      "rules": ["3–4 strength sessions per week max", "Emphasize compound lifts", "Avoid fasted workouts"]
+    },
+    "high_stress_cortisol": {
+      "triggers": ["Poor stress tolerance", "Sleep disruption", "Cortisol metabolism issues"],
+      "strategy": "Low to moderate intensity, Shorter sessions, Recovery-focused",
+      "language": "Supports nervous system regulation",
+      "rules": ["Limit HIIT or intense conditioning", "Prioritize walking, mobility, and breathwork", "No 'push through fatigue' messaging"]
+    },
+    "low_energy_fatigue": {
+      "triggers": ["Chronic fatigue", "Low motivation", "Poor recovery"],
+      "strategy": "Maintain movement without depletion",
+      "rules": ["Reduce volume before intensity", "Encourage shorter, more frequent sessions", "Normalize rest days"]
+    },
+    "gut_healing": {
+      "triggers": ["Bloating", "GI discomfort", "Elimination diet phase"],
+      "strategy": "Gentle, non-jarring movement",
+      "rules": ["Walking, light strength, yoga", "Avoid excessive core bracing or high-impact work", "Emphasize parasympathetic activation"]
+    }
+  },
+  "daily_movement": {
+    "walking_target": "8,000–10,000 steps/day (as tolerated)",
+    "post_meal_walking": "encouraged for blood sugar support",
+    "outdoor_preference": "when possible"
+  },
+  "strength_training": {
+    "frequency": "2–4× per week depending on phase",
+    "splits": ["2 upper / 2 lower", "OR 2 total body"],
+    "rest_days": "mandatory",
+    "progression": "only when recovery is adequate"
+  },
+  "stress_regulation": [
+    "Breathwork",
+    "Meditation",
+    "Stretching",
+    "Gentle yoga",
+    "Time outdoors",
+    "Digital boundaries"
+  ],
+  "sleep_support": {
+    "priorities": [
+      "Consistent sleep/wake times",
+      "Morning light exposure (within 30 minutes of waking)",
+      "Reduced blue light exposure at night",
+      "Calm evening routines"
+    ],
+    "language": "Sleep is foundational for hormone and metabolic health"
+  },
+  "guardrails": [
+    "Avoid excessive HIIT",
+    "Avoid fasted workouts",
+    "Avoid late-night intense training",
+    "Avoid screen use before bed",
+    "Avoid over-scheduling workouts"
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "purpose": "Guide AI in consistently translating client intake data, lab results, and symptom patterns into clear, educational, client-facing protocol",
+  "core_rules": [
+    "Never diagnose",
+    "Use intake language verbatim",
+    "Do not invent labs or symptoms",
+    "Labs inform priorities, not overwhelm",
+    "Every lab finding must map to action",
+    "Always explain 'why this matters'",
+    "Protocols are phase-based"
+  ],
+  "patterns": {
+    "estrogen_low": {
+      "interpretation": "Low estrogen may be influenced by lifestyle factors, supplements (e.g., DIM), stress, or lack of ovulation",
+      "why_matters": "Estrogen supports mood, libido, sleep quality, and healthy menstrual flow. Low levels can affect how other hormones function",
+      "symptoms": ["Low libido", "Poor sleep", "Mood changes", "Cycle changes"],
+      "protocol": ["Avoid overly aggressive estrogen-lowering strategies", "Support ovulation and progesterone first", "Emphasize balanced nutrition and stress reduction"]
+    },
+    "progesterone_low": {
+      "interpretation": "Low progesterone is often consistent with anovulatory cycles or luteal phase disruption",
+      "why_matters": "Progesterone helps calm the nervous system, support sleep, reduce cramping, and balance estrogen",
+      "symptoms": ["Sleep disruption", "Increased stress sensitivity", "Cramping", "Heavy bleeding"],
+      "protocol": ["Prioritize ovulation support", "Avoid driving estrogen too low", "Support stress resilience and blood sugar balance"]
+    },
+    "androgen_dominance": {
+      "interpretation": "Elevated androgens relative to estrogen/progesterone may be consistent with PCOS physiology",
+      "why_matters": "High androgens can suppress ovulation, lower progesterone production, and contribute to hormonal imbalance",
+      "symptoms": ["Acne (jawline, chin, cheeks)", "Hair shedding", "Cycle irregularity", "Low libido"],
+      "protocol": ["Blood sugar regulation is a top priority", "Consider inositol-based support", "Include androgen-modulating strategies (nutrition + supplements)"]
+    },
+    "methylation_low": {
+      "interpretation": "Reduced methylation capacity may affect hormone clearance and neurotransmitter balance",
+      "why_matters": "Methylation helps clear hormones, regulate mood, and support detoxification",
+      "symptoms": ["Mood changes", "Hormone recirculation", "Poor stress tolerance"],
+      "protocol": ["Support detox pathways gently", "Avoid overload", "Reinforce nutrient sufficiency (B vitamins)"]
+    },
+    "phase2_estrogen_slow": {
+      "interpretation": "Sluggish estrogen packaging for elimination, even when total estrogen is low",
+      "why_matters": "Poor Phase 2 detox can lead to estrogen recirculation and hormonal discomfort",
+      "symptoms": ["Bloating", "Cramping", "Heavy periods"],
+      "protocol": ["Emphasize fiber intake", "Support liver detox pathways", "Avoid aggressive estrogen suppression"]
+    },
+    "cortisol_metabolism_low": {
+      "interpretation": "Cortisol production may be present, but breakdown and clearance are impaired",
+      "why_matters": "Poor cortisol metabolism disrupts sleep-wake rhythms, stress tolerance, and metabolic health",
+      "symptoms": ["Poor stress tolerance", "Sleep disruption", "Difficulty losing weight"],
+      "protocol": ["Prioritize nervous system regulation", "Avoid overtraining", "Reinforce circadian rhythm habits"]
+    },
+    "glutathione_low": {
+      "interpretation": "Reduced antioxidant capacity and detox support",
+      "why_matters": "Glutathione is the body's primary antioxidant and supports hormone clearance",
+      "symptoms": ["Increased inflammation", "Slower estrogen detox", "Oxidative stress"],
+      "protocol": ["Gentle detox support", "Emphasize antioxidant-rich foods", "Consider NAC / glycine when appropriate"]
+    },
+    "b6_deficiency": {
+      "interpretation": "Functional B6 deficiency may impair progesterone production and neurotransmitter balance",
+      "why_matters": "B6 is required for hormone metabolism, mood regulation, and sleep quality",
+      "symptoms": ["Mood changes", "Sleep disturbances"],
+      "protocol": ["Nutrient repletion", "Support progesterone pathways", "Reinforce food-first strategies"]
+    }
+  },
+  "timeline_expectations": {
+    "early_changes": "weeks 3–4",
+    "meaningful_shifts": "8–12+ weeks",
+    "note": "Normalize non-linear healing"
+  }
+}

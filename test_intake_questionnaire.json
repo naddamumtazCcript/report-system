@@ -1,0 +1,120 @@
+{
+  "personal_info": {
+    "legal_first_name": "Sarah",
+    "last_name": "Mitchell",
+    "street": "",
+    "unit": "",
+    "city": "",
+    "state_province": "",
+    "postal_code": "",
+    "home_phone": "",
+    "mobile_phone": "(555) 123-4567",
+    "email": "sarah.mitchell@email.com",
+    "date_of_birth": "",
+    "gender": "Female",
+    "relationship_status": "",
+    "occupation": "Office job",
+    "hours_per_week": "40+",
+    "current_weight": "",
+    "height": ""
+  },
+  "health_info": {
+    "official_diagnoses": "PCOS (diagnosed 2 years ago)",
+    "health_history": "History of acne (improved but still present), occasional digestive issues (bloating, gas), difficulty falling asleep and waking up tired",
+    "main_symptoms_ordered": [
+      "Chronic fatigue and low energy levels (8/10 severity)",
+      "Irregular menstrual cycles (cycles ranging 35-45 days)",
+      "Difficulty losing weight despite diet and exercise",
+      "Brain fog and difficulty concentrating",
+      "Mood swings and irritability before period"
+    ],
+    "short_term_goals": "Regulate menstrual cycle, increase energy levels, improve sleep quality",
+    "long_term_goals": "Lose 15-20 pounds, reduce stress and improve mood, clear remaining acne, reduce bloating and digestive issues",
+    "current_supplements": "Multivitamin (daily), Vitamin D 2000 IU (daily), Fish Oil 1000mg (occasionally)",
+    "prescription_medications": "None currently",
+    "allergies": "",
+    "previous_healing_methods": ""
+  },
+  "diet_history": {
+    "chronic_dieting_history": "",
+    "typical_meals": {
+      "day_1": {
+        "breakfast": "Coffee, toast with butter, sometimes eggs",
+        "snack": "Crackers, fruit, chocolate",
+        "lunch": "Salad with chicken or sandwich",
+        "snack_2": "",
+        "dinner": "Pasta, rice dishes, or meat with vegetables"
+      },
+      "day_2": {
+        "breakfast": "Coffee, toast with butter, sometimes eggs",
+        "snack": "Crackers, fruit, chocolate",
+        "lunch": "Salad with chicken or sandwich",
+        "snack_2": "",
+        "dinner": "Pasta, rice dishes, or meat with vegetables"
+      },
+      "day_3": {
+        "breakfast": "Coffee, toast with butter, sometimes eggs",
+        "snack": "Crackers, fruit, chocolate",
+        "lunch": "Salad with chicken or sandwich",
+        "snack_2": "",
+        "dinner": "Pasta, rice dishes, or meat with vegetables"
+      }
+    },
+    "macros": {
+      "day_1": {"protein": "", "fat": "", "carbohydrates": "", "calories": ""},
+      "day_2": {"protein": "", "fat": "", "carbohydrates": "", "calories": ""},
+      "day_3": {"protein": "", "fat": "", "carbohydrates": "", "calories": ""}
+    }
+  },
+  "nutrition_preferences": {
+    "nutrition_support_type": "",
+    "nutritional_support_preference": "Prefer natural approaches when possible",
+    "nutrition_struggles": "Difficulty losing weight despite diet and exercise",
+    "recipe_preference": "",
+    "wants_macro_breakdowns": "",
+    "foods_to_avoid": "Possible dairy sensitivity (causes bloating)"
+  },
+  "fitness": {
+    "weekly_workout_description": "3x per week (yoga, walking)",
+    "workout_limitations": ""
+  },
+  "digestive_health": {
+    "digestive_symptoms": "Occasional digestive issues (bloating, gas), possible dairy sensitivity",
+    "bowel_movement_frequency": "",
+    "bowel_movement_type": "",
+    "menstrual_cycle_description": "Cycle Length: 35-45 days (irregular), Flow: Heavy first 2 days then light, PMS Symptoms: mood swings, cravings, fatigue, breast tenderness, Last Period: February 28, 2026"
+  },
+  "lifestyle": {
+    "energy_levels": "3/10 - Chronic fatigue and low energy levels",
+    "sleep_quality": "4/10 - 6-7 hours per night, difficulty falling asleep, waking up tired",
+    "birth_control_history": "None currently",
+    "mental_health_issues": "Mood swings and irritability before period, brain fog and difficulty concentrating",
+    "therapy_status": "",
+    "eating_disorder_history": "",
+    "alcohol_frequency": "2-3 glasses wine per week",
+    "additional_symptoms": "Fatigue: 8/10, Sleep Quality: 4/10, Stress Level: 7/10, Digestive Issues: 5/10, Mood: 6/10, Energy: 3/10, Mental Clarity: 4/10",
+    "typical_day": "Office job, sitting 8+ hours daily",
+    "daily_routine_struggles": "High stress level (work deadlines, family responsibilities), minimal time for self-care"
+  },
+  "medical_history": {
+    "previous_practitioner_experience": "",
+    "high_blood_pressure": "",
+    "currently_on_hormonal_birth_control": "No",
+    "mold_exposure": "",
+    "long_term_antibiotic_use": "",
+    "family_estrogen_cancer_history": "",
+    "other_family_health_history": "Family history of diabetes (mother)"
+  },
+  "personal_care": {
+    "skincare_haircare_products": "",
+    "hair_coloring_frequency": "",
+    "heat_styling_frequency": "",
+    "on_fertility_journey": ""
+  },
+  "supplement_preferences": {
+    "supplement_preference": "Prefer natural approaches when possible"
+  },
+  "goals": {
+    "wellness_journey_excitement": "Willing to make dietary changes, need practical recommendations that fit busy lifestyle"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "purpose": "Guide AI in translating client intake data, lab patterns, and symptom priorities into clear, supportive, and actionable nutrition strategy",
+  "core_rules": [
+    "Food is supportive, not punitive",
+    "Blood sugar balance is foundational",
+    "Protein anchors every meal",
+    "No naked carbohydrates",
+    "Fiber is introduced progressively",
+    "Simplicity over complexity",
+    "Nutrition strategy must match the phase",
+    "Macros are optional, not mandatory"
+  ],
+  "standard_flow": [
+    "Primary Nutrition Goal",
+    "Diet Framework",
+    "Why This Helps (brief)",
+    "Core Habits",
+    "Macro Guidance (if applicable)",
+    "Plate Method (if not tracking)",
+    "Recommended Foods",
+    "Foods to Limit (phase-specific)"
+  ],
+  "patterns": {
+    "blood_sugar_pcos": {
+      "triggers": ["PCOS diagnosis", "Elevated androgens", "Energy crashes", "Cravings", "Difficulty losing weight"],
+      "strategy": "Slightly lower-carbohydrate, protein-forward",
+      "core_habits": ["Protein first", "No naked carbs", "10-minute walk after meals", "Optional CGM for feedback"],
+      "macro_guidance": "Moderate carbs (not keto), Adequate protein (≥25–40g per meal)"
+    },
+    "digestive_bloating": {
+      "triggers": ["Daily bloating", "Gas", "Morning abdominal discomfort", "Irregular digestion"],
+      "strategy": "Elimination-style, low-reactivity foods",
+      "core_habits": ["Fewer ingredients per meal", "Thorough chewing", "Avoid large raw salads initially"],
+      "food_focus": ["Gluten-free", "Dairy-free", "Low-FODMAP leaning (initially)"]
+    },
+    "hormone_clearance": {
+      "triggers": ["Heavy periods", "Cramping", "Estrogen metabolism markers slow", "Bloating around cycle"],
+      "strategy": "Fiber-forward, Cruciferous vegetables as tolerated",
+      "food_focus": ["Broccoli sprouts", "Leafy greens", "Berries", "Ground flax (if tolerated)"]
+    },
+    "low_energy_fatigue": {
+      "triggers": ["Poor stress tolerance", "Sleep disruption", "Cortisol metabolism issues"],
+      "strategy": "Consistent meal timing, Adequate carbohydrates",
+      "core_habits": ["Regular meals", "Evening carbohydrate inclusion if sleep is disrupted", "Adequate sodium and hydration"]
+    }
+  },
+  "plate_method": {
+    "vegetables": "½ plate non-starchy vegetables",
+    "protein": "¼ plate protein",
+    "carbohydrates": "¼ plate carbohydrates",
+    "fats": "Add fats intentionally"
+  },
+  "elimination_phase": {
+    "purpose": "Reduce inflammation, Calm digestion, Identify triggers",
+    "duration": "3–4 weeks unless otherwise specified",
+    "framework": ["Gluten-free", "Dairy-free", "Whole foods", "Low-reactivity proteins"],
+    "reintroduction": "One food category at a time, Monitor symptoms before progressing"
+  }
+}

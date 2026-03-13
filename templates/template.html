@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Protocol - {{ client_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: letter;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333333;
+            line-height: 1.6;
+            background: #f4f5f7;
+        }
+
+        /* ==================== COVER PAGE ==================== */
+        .cover-page {
+            height: 100vh;
+            background: linear-gradient(135deg, #1a2332 0%, #2c5f7c 100%);
+            padding: 60px;
+            color: white;
+            page-break-after: always;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cover-page::before {
+            content: '';
+            position: absolute;
+            bottom: -100px;
+            left: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(44, 95, 124, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .cover-title {
+            font-size: 42px;
+            font-weight: bold;
+            line-height: 1.3;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cover-subtitle {
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            color: #e8eaed;
+        }
+
+        .cover-intro {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #e8eaed;
+            margin-bottom: 50px;
+            max-width: 700px;
+        }
+
+        /* Patient Data Card */
+        .patient-data-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 50px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .patient-data-grid {
+            display: flex;
+            gap: 40px;
+            justify-content: space-between;
+        }
+
+        .patient-data-col {
+            flex: 1;
+        }
+
+        .patient-data-label {
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .patient-data-value {
+            font-size: 15px;
+            color: #1a2332;
+            font-weight: 500;
+        }
+
+        /* Disclaimer Box */
+        .disclaimer-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .disclaimer-title {
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            color: #e8eaed;
+        }
+
+        .disclaimer-text {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #e8eaed;
+        }
+
+        /* ==================== INTERNAL PAGES ==================== */
+        .content-page {
+            background: #f4f5f7;
+            min-height: 100vh;
+            padding-bottom: 60px;
+            page-break-after: always;
+        }
+
+        /* Section Header Banner */
+        .section-header {
+            background: linear-gradient(135deg, #1a2332 0%, #2c5f7c 100%);
+            padding: 35px 50px;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .section-icon {
+            font-size: 32px;
+            color: white;
+        }
+
+        .section-header-text {
+            flex: 1;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: #e8eaed;
+            font-weight: 400;
+        }
+
+        /* White Content Cards */
+        .content-container {
+            padding: 0 50px;
+        }
+
+        .white-card {
+            background: white;
+            border-radius: 12px;
+            padding: 35px 40px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Subsection Titles */
+        .subsection-title {
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #1a2332;
+            margin-bottom: 18px;
+            margin-top: 25px;
+        }
+
+        .subsection-title:first-child {
+            margin-top: 0;
+        }
+
+        /* Body Text */
+        .body-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #333333;
+            margin-bottom: 15px;
+        }
+
+        .body-text strong {
+            color: #1a2332;
+            font-weight: 600;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #333333;
+            margin-bottom: 10px;
+        }
+
+        ul li {
+            list-style-type: disc;
+        }
+
+        ul ul li {
+            list-style-type: circle;
+        }
+
+        /* Concern Blocks */
+        .concern-block {
+            margin-bottom: 25px;
+            padding-left: 15px;
+            border-left: 3px solid #2c5f7c;
+        }
+
+        .concern-title {
+            font-weight: bold;
+            color: #1a2332;
+            margin-bottom: 10px;
+        }
+
+        /* Lab Summary */
+        .lab-summary {
+            background: #f8f9fa;
+            border-left: 4px solid #2c5f7c;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+        }
+
+        .lab-marker {
+            margin-bottom: 20px;
+        }
+
+        .lab-marker-name {
+            font-weight: bold;
+            color: #1a2332;
+            margin-bottom: 5px;
+        }
+
+        .lab-marker-value {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .lab-marker-summary {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Macro Grid */
+        .macro-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .macro-item {
+            background: #f8f9fa;
+            padding: 18px;
+            border-radius: 8px;
+            border-left: 3px solid #2c5f7c;
+        }
+
+        .macro-label {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .macro-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a2332;
+        }
+
+        /* Footer */
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #1a2332;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 50px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .footer-logo {
+            font-weight: bold;
+        }
+
+        .footer-page {
+            font-weight: 400;
+        }
+
+        /* Print-specific */
+        @media print {
+            .page-footer {
+                position: fixed;
+            }
+        }
+
+        /* Utility Classes */
+        .mb-10 { margin-bottom: 10px; }
+        .mb-15 { margin-bottom: 15px; }
+        .mb-20 { margin-bottom: 20px; }
+        .mb-30 { margin-bottom: 30px; }
+        .mt-20 { margin-top: 20px; }
+        .mt-30 { margin-top: 30px; }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== COVER PAGE ==================== -->
+    <div class="cover-page">
+        <div class="cover-title">
+            Welcome To Your<br>Personalized Health Protocol
+        </div>
+
+        <div class="cover-subtitle">HOW TO READ THIS REPORT</div>
+        
+        <div class="cover-intro">
+            This personalized protocol has been created for {{ client_name }} based on your health questionnaire and lab results. It provides comprehensive recommendations for nutrition, lifestyle, and supplementation tailored to your unique health needs and goals.
+        </div>
+
+        <!-- Patient Data Card -->
+        <div class="patient-data-card">
+            <div class="patient-data-grid">
+                <div class="patient-data-col">
+                    <div class="patient-data-label">PREPARED FOR</div>
+                    <div class="patient-data-value">{{ client_name }}</div>
+                </div>
+                <div class="patient-data-col">
+                    <div class="patient-data-label">DATE</div>
+                    <div class="patient-data-value">{{ date }}</div>
+                </div>
+                <div class="patient-data-col">
+                    <div class="patient-data-label">PROTOCOL TYPE</div>
+                    <div class="patient-data-value">Comprehensive Protocol</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer-box">
+            <div class="disclaimer-title">DISCLAIMER</div>
+            <div class="disclaimer-text">
+                All recommendations are for educational purposes only and are not intended to replace medical advice, diagnosis, or treatment. Always consult your healthcare provider before starting, stopping, or changing any supplement or medication.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 1: GENERAL OVERVIEW ==================== -->
+    <div class="content-page">
+        <div class="section-header">
+            <div class="section-icon">📋</div>
+            <div class="section-header-text">
+                <div class="section-title">General Overview</div>
+                <div class="section-subtitle">Your personalized health assessment and recommendations</div>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <div class="white-card">
+                {% if focus_items %}
+                <div class="subsection-title">FOCUS ITEMS</div>
+                <ul>
+                    {% for item in focus_items %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if concerns %}
+                <div class="subsection-title">TOP CONCERNS</div>
+                {% for concern in concerns %}
+                <div class="concern-block">
+                    <div class="concern-title">Concern {{ loop.index }}:</div>
+                    <div class="body-text"><strong>Description:</strong> {{ concern.description }}</div>
+                    <div class="body-text"><strong>Likely Driver(s):</strong> {{ concern.drivers }}</div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if lab_review_content %}
+                <div class="subsection-title">LAB REVIEW SUMMARY</div>
+                <div class="lab-summary">
+                    {{ lab_review_content | safe }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 2: NUTRITION ==================== -->
+    <div class="content-page">
+        <div class="section-header">
+            <div class="section-icon">🥗</div>
+            <div class="section-header-text">
+                <div class="section-title">Nutrition Strategy</div>
+                <div class="section-subtitle">Personalized nutrition plan to support your goals</div>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <div class="white-card">
+                {% if primary_nutrition_goal %}
+                <div class="subsection-title">NUTRITION FOCUS</div>
+                <div class="body-text"><strong>Primary Goal:</strong> {{ primary_nutrition_goal }}</div>
+                
+                {% if hydration_target %}
+                <div class="body-text"><strong>Hydration Target:</strong> {{ hydration_target }}</div>
+                {% endif %}
+
+                {% if core_habits %}
+                <div class="body-text mt-20"><strong>Core Habits:</strong></div>
+                <ol>
+                    {% for habit in core_habits %}
+                    <li>{{ habit }}</li>
+                    {% endfor %}
+                </ol>
+                {% endif %}
+                {% endif %}
+
+                {% if calories %}
+                <div class="subsection-title">MACRO RECOMMENDATIONS</div>
+                <div class="macro-grid">
+                    <div class="macro-item">
+                        <div class="macro-label">Calories</div>
+                        <div class="macro-value">{{ calories }}</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-label">Protein</div>
+                        <div class="macro-value">{{ protein }}</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-label">Carbohydrates</div>
+                        <div class="macro-value">{{ carbohydrates }}</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-label">Fat</div>
+                        <div class="macro-value">{{ fat }}</div>
+                    </div>
+                </div>
+                {% if fiber %}
+                <div class="body-text"><strong>Fiber:</strong> {{ fiber }}</div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 3: LIFESTYLE ==================== -->
+    <div class="content-page">
+        <div class="section-header">
+            <div class="section-icon">🏃</div>
+            <div class="section-header-text">
+                <div class="section-title">Lifestyle & Movement</div>
+                <div class="section-subtitle">Exercise and stress management recommendations</div>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <div class="white-card">
+                {% if daily_steps_target %}
+                <div class="body-text"><strong>Daily Steps Target:</strong> {{ daily_steps_target }}</div>
+                {% endif %}
+
+                {% if strength_frequency %}
+                <div class="subsection-title">STRENGTH TRAINING</div>
+                <div class="body-text"><strong>Frequency:</strong> {{ strength_frequency }}</div>
+                {% if strength_split %}
+                <div class="body-text"><strong>Split:</strong> {{ strength_split }}</div>
+                {% endif %}
+                {% endif %}
+
+                {% if stress_supports %}
+                <div class="subsection-title">STRESS & NERVOUS SYSTEM SUPPORT</div>
+                <ul>
+                    {% for support in stress_supports %}
+                    <li>{{ support }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 4: SUPPLEMENTS ==================== -->
+    <div class="content-page">
+        <div class="section-header">
+            <div class="section-icon">💊</div>
+            <div class="section-header-text">
+                <div class="section-title">Supplement Protocol</div>
+                <div class="section-subtitle">Targeted supplementation to support your health</div>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <div class="white-card">
+                {% if active_supplements_content %}
+                <div class="subsection-title">ACTIVE SUPPLEMENTS</div>
+                <div class="body-text">
+                    {{ active_supplements_content | safe }}
+                </div>
+                {% endif %}
+
+                {% if pause_supplements %}
+                <div class="subsection-title">SUPPLEMENTS TO PAUSE OR ADJUST</div>
+                <ul>
+                    {% for supplement in pause_supplements %}
+                    <li>{{ supplement }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (appears on all pages except cover) -->
+    <div class="page-footer">
+        <div class="footer-logo">BeBalanced AI</div>
+        <div class="footer-page">Personalized Health Protocol</div>
+    </div>
+
+</body>
+</html>

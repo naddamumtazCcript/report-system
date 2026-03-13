@@ -11,7 +11,7 @@ if str(src_path) not in sys.path:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import library, protocol, upload, generate, export_pdf, export_docx, client, generate_comprehensive, practitioner, lab_extraction, pdf_to_json
+from api.routes import library, upload, generate, client, practitioner, lab_extraction, pdf_to_json
 
 app = FastAPI(
     title="Be Balanced Protocol API",
@@ -31,17 +31,14 @@ app.add_middleware(
 app.include_router(library.router, prefix="/api/library", tags=["Knowledge Base"])
 
 # Protocol Generation
-app.include_router(protocol.router, prefix="/api/protocol", tags=["Protocol"])
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
 app.include_router(generate.router, prefix="/api", tags=["Generate"])
-app.include_router(export_pdf.router, prefix="/api", tags=["Export"])
-app.include_router(export_docx.router, prefix="/api", tags=["Export"])
 
 # Client Chat
 app.include_router(client.router, prefix="/api", tags=["Client Chat"])
 
 # Comprehensive Protocol Generation
-app.include_router(generate_comprehensive.router, prefix="/api", tags=["Comprehensive Generation"])
+# app.include_router(generate_comprehensive.router) - removed, use /generate-from-json instead
 
 # Practitioner Agent
 app.include_router(practitioner.router, prefix="/api", tags=["Practitioner Agent"])

@@ -1,146 +1,186 @@
 """
-Lab Analyzer - AI-powered parsing of lab reports
+Lab Analyzer - Detect out-of-range markers and generate AI summaries
 """
 import os
-import json
 from openai import OpenAI
 from dotenv import load_dotenv
-from pathlib import Path
-from core.schema import LabResult, LabReport, LabData
-from utils.token_tracker import TokenTracker
+from typing import List, Optional
+from core.schema import LabResult
+from utils.error_handler import logger
 
 load_dotenv()
-token_tracker = TokenTracker()
 
-def analyze_lab_report(lab_text_path):
-    """Parse a single lab report using AI"""
-    api_key = os.getenv('OPENAI_API_KEY')
-    if not api_key:
-        return None
+
+def is_out_of_range(flag: str) -> bool:
+    """Check if a lab marker is out of normal range"""
+    if not flag:
+        return False
     
-    with open(lab_text_path, 'r', encoding='utf-8') as f:
-        lab_text = f.read()
+    flag_upper = flag.upper().strip()
     
-    client = OpenAI(api_key=api_key)
+    # Simple flags
+    out_of_range_flags = ['H', 'HIGH', 'L', 'LOW', 'OUT OF RANGE', 'ABNORMAL', 'ELEVATED']
     
-    prompt = f"""You are a medical lab report parser. Extract structured data from this lab report.
-
-LAB REPORT TEXT:
-{lab_text[:8000]}
-
-Extract the following information:
-
-1. Report type (e.g., "DUTCH Complete", "Blood Panel", "Thyroid Panel")
-2. Report date
-3. All biomarkers with their values, units, reference ranges, and status flags
-
-Return ONLY a JSON object with this structure:
-{{
-  "report_type": "report name",
-  "report_date": "YYYY-MM-DD",
-  "results": [
-    {{
-      "test_name": "Biomarker name",
-      "value": "numeric value or result",
-      "unit": "unit of measurement",
-      "reference_range": "normal range",
-      "flag": "High/Low/Normal/Out of Range/Within Range"
-    }}
-  ],
-  "key_findings": ["finding 1", "finding 2"],
-  "abnormal_markers": ["marker 1", "marker 2"]
-}}
-
-Focus on:
-- Hormones (estrogen, progesterone, testosterone, cortisol, DHEA)
-- Metabolites and ratios
-- Any markers flagged as high, low, or out of range
-- Clinical significance of abnormal values"""
+    if flag_upper in out_of_range_flags:
+        return True
     
+    # Descriptive flags
+    out_of_range_keywords = ['ABOVE', 'BELOW', 'ELEVATED', 'DECREASED', 'HIGH END', 'LOW END']
+    
+    for keyword in out_of_range_keywords:
+        if keyword in flag_upper:
+            return True
+    
+    return False
+
+
+def generate_marker_summary(
+    marker_name: str,
+    value: str,
+    unit: str,
+    reference_range: str,
+    flag: str
+) -> str:
+    """
+    Generate AI summary for out-of-range lab marker
+    
+    Args:
+        marker_name: Name of the lab marker
+        value: Test result value
+        unit: Unit of measurement
+        reference_range: Normal reference range
+        flag: Status flag (H/L/High/Low)
+        
+    Returns:
+        2-3 sentence summary explaining the marker
+    """
     try:
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            logger.error("OPENAI_API_KEY not found")
+            return ""
+        
+        client = OpenAI(api_key=api_key)
+        
+        prompt = f"""You are a health practitioner explaining lab results to a client.
+
+Given this out-of-range lab marker:
+- Marker: {marker_name}
+- Value: {value} {unit}
+- Reference Range: {reference_range}
+- Status: {flag}
+
+Generate a 2-3 sentence summary that:
+1. States whether the value is above or below normal
+2. Briefly explains what this marker measures
+3. Mentions potential health implications
+
+Use supportive, non-alarmist language. Be concise and clear.
+Do not give medical advice or recommend specific treatments.
+
+Example format:
+"Your [marker name] level is [above/below] the normal reference range. This marker measures [what it measures]. [Status] levels may be associated with [potential implications]."
+"""
+        
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
+            temperature=0.3,
+            max_tokens=150
         )
         
-        token_tracker.track("lab_analysis", response)
+        summary = response.choices[0].message.content.strip()
+        logger.info(f"Generated summary for {marker_name}")
         
-        result = response.choices[0].message.content.strip()
-        if result.startswith('```json'):
-            result = result[7:]
-        if result.endswith('```'):
-            result = result[:-3]
-        
-        parsed = json.loads(result.strip())
-        
-        # Convert to dataclass
-        results = [LabResult(**r) for r in parsed.get('results', [])]
-        lab_report = LabReport(
-            report_date=parsed.get('report_date', ''),
-            report_type=parsed.get('report_type', ''),
-            results=results,
-            key_findings=parsed.get('key_findings', []),
-            abnormal_markers=parsed.get('abnormal_markers', [])
-        )
-        
-        return lab_report
+        return summary
         
     except Exception as e:
-        print(f"Error analyzing lab report: {e}")
-        return None
+        logger.error(f"Failed to generate summary for {marker_name}: {e}")
+        return ""
 
-def analyze_multiple_lab_reports(lab_text_dir="data/lab_reports/extracted"):
-    """Analyze all lab reports in directory"""
-    lab_dir = Path(lab_text_dir)
-    
-    if not lab_dir.exists():
-        return LabData(reports=[], summary="No lab reports found")
-    
-    lab_reports = []
-    txt_files = list(lab_dir.glob("*.txt"))
-    
-    for txt_file in txt_files:
-        print(f"📊 Analyzing {txt_file.name}...")
-        lab_report = analyze_lab_report(txt_file)
-        if lab_report:
-            lab_reports.append(lab_report)
-            
-            # Save parsed JSON
-            output_dir = Path("data/lab_reports/parsed")
-            output_dir.mkdir(parents=True, exist_ok=True)
-            output_file = output_dir / f"{txt_file.stem}.json"
-            
-            with open(output_file, 'w') as f:
-                json.dump({
-                    'report_type': lab_report.report_type,
-                    'report_date': lab_report.report_date,
-                    'results': [vars(r) for r in lab_report.results],
-                    'key_findings': lab_report.key_findings,
-                    'abnormal_markers': lab_report.abnormal_markers
-                }, f, indent=2)
-            
-            print(f"✅ Parsed {len(lab_report.results)} biomarkers")
-    
-    # Generate summary
-    summary = generate_lab_summary(lab_reports)
-    
-    return LabData(reports=lab_reports, summary=summary)
 
-def generate_lab_summary(lab_reports):
-    """Generate a summary of all lab findings"""
-    if not lab_reports:
-        return "No lab reports analyzed"
+def analyze_lab_results(lab_results: List[LabResult]) -> List[LabResult]:
+    """
+    Analyze lab results and add summaries for out-of-range markers
     
-    total_markers = sum(len(r.results) for r in lab_reports)
-    all_abnormal = []
-    for report in lab_reports:
-        all_abnormal.extend(report.abnormal_markers)
+    Args:
+        lab_results: List of LabResult objects
+        
+    Returns:
+        List of LabResult objects with summaries added to out-of-range markers
+    """
+    if not lab_results:
+        return []
     
-    summary = f"Analyzed {len(lab_reports)} lab report(s) with {total_markers} total biomarkers. "
-    if all_abnormal:
-        summary += f"Found {len(all_abnormal)} abnormal markers: {', '.join(all_abnormal[:5])}"
-    else:
-        summary += "All markers within normal ranges."
+    logger.info(f"Analyzing {len(lab_results)} lab results...")
     
-    return summary
+    out_of_range_count = 0
+    
+    for result in lab_results:
+        if is_out_of_range(result.flag):
+            out_of_range_count += 1
+            logger.info(f"Out-of-range marker detected: {result.test_name} = {result.value} (Flag: {result.flag})")
+            
+            # Generate summary for out-of-range marker
+            summary = generate_marker_summary(
+                marker_name=result.test_name,
+                value=result.value,
+                unit=result.unit,
+                reference_range=result.reference_range,
+                flag=result.flag
+            )
+            
+            result.summary = summary
+        else:
+            # Normal markers don't get summaries
+            result.summary = None
+    
+    logger.info(f"Found {out_of_range_count} out-of-range markers")
+    logger.info(f"Generated {out_of_range_count} summaries")
+    
+    return lab_results
+
+
+def get_out_of_range_markers(lab_results: List[LabResult]) -> List[LabResult]:
+    """
+    Filter and return only out-of-range markers
+    
+    Args:
+        lab_results: List of LabResult objects
+        
+    Returns:
+        List of only out-of-range LabResult objects
+    """
+    return [result for result in lab_results if is_out_of_range(result.flag)]
+
+
+def format_lab_summary_for_protocol(lab_results: List[LabResult]) -> str:
+    """
+    Format out-of-range markers with summaries for protocol inclusion
+    
+    Args:
+        lab_results: List of LabResult objects
+        
+    Returns:
+        Formatted string for protocol
+    """
+    out_of_range = get_out_of_range_markers(lab_results)
+    
+    if not out_of_range:
+        return "All lab markers are within normal reference ranges."
+    
+    summary_lines = []
+    summary_lines.append(f"**Out-of-Range Markers ({len(out_of_range)} found):**\n")
+    
+    for result in out_of_range:
+        summary_lines.append(f"**{result.test_name}**")
+        summary_lines.append(f"- Value: {result.value} {result.unit}")
+        summary_lines.append(f"- Reference Range: {result.reference_range}")
+        summary_lines.append(f"- Status: {result.flag}")
+        
+        if result.summary:
+            summary_lines.append(f"- Summary: {result.summary}")
+        
+        summary_lines.append("")  # Blank line between markers
+    
+    return "\n".join(summary_lines)

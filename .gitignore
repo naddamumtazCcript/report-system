@@ -18,13 +18,21 @@ ENV/
 .env
 .env.local
 
-# Data directories
+# Data directories (runtime, not source)
 data/uploads/*
 data/output/*
 src/data/uploads/*
 src/data/output/*
+src/data/client_protocols/*
+src/data/lab_reports/*
 !data/uploads/.gitkeep
 !data/output/.gitkeep
+
+# Generated output
+output/
+
+# Vector database (runtime)
+vectordb/
 
 # Logs
 src/logs/*.log
@@ -33,6 +41,7 @@ src/logs/*.log
 .DS_Store
 Thumbs.db
 
-# Test outputs
-*.json.test
-test_*.json
+# Uploaded/test PDFs (not source)
+data/*.pdf
+test_intake_questionnaire.pdf
+BeBalanced_Intake*.pdf

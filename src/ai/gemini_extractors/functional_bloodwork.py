@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from core.schema import LabResult
+from ai.lab_analyzer import analyze_lab_results
 
 load_dotenv()
 
@@ -57,6 +59,23 @@ def extract_bloodwork(file_path: str):
     unique_results_dict = {entry.test_name: entry for entry in parsed_data.results}
     parsed_data.results = list(unique_results_dict.values())
     
-    return parsed_data
+    # Convert to LabResult objects
+    lab_results = []
+    for entry in parsed_data.results:
+        lab_result = LabResult(
+            test_name=entry.test_name,
+            value=entry.result,
+            unit=entry.units,
+            reference_range=entry.reference_range,
+            flag=entry.flag or "Normal",
+            summary=None
+        )
+        lab_results.append(lab_result)
+    
+    # Analyze results and add summaries for out-of-range markers
+    print("Analyzing lab results for out-of-range markers...")
+    lab_results = analyze_lab_results(lab_results)
+    
+    return parsed_data.report_date, lab_results
 
 # data = extract_bloodwork("bloodwork_sample.pdf")

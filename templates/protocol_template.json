@@ -1,0 +1,110 @@
+{
+  "template_name": "BeBalanced Protocol Template",
+  "version": "1.0",
+  "sections": [
+    {
+      "title": "{Client Name}",
+      "type": "header",
+      "content": "{Date}"
+    },
+    {
+      "title": "SECTION 1: GENERAL",
+      "type": "section",
+      "subsections": [
+        {
+          "title": "EDUCATION RESOURCES",
+          "content": "* Intro Video Link: {video_link}"
+        },
+        {
+          "title": "FOCUS ITEMS",
+          "content": "* {focus_item_1}\n* {focus_item_2}\n* {focus_item_3}\n* {focus_item_4}\n* {focus_item_5}"
+        },
+        {
+          "title": "TOP CONCERNS",
+          "content": "**Concern 1:**\n\n* Description: {concern_1_description}\n* Likely Driver(s): {concern_1_drivers}\n\n**Concern 2:**\n\n* Description: {concern_2_description}\n* Likely Driver(s): {concern_2_drivers}\n\n**Concern 3:**\n\n* Description: {concern_3_description}\n* Likely Driver(s): {concern_3_drivers}\n\n**Concern 4:**\n\n* Description: {concern_4_description}\n* Likely Driver(s): {concern_4_drivers}\n\n**Concern 5:**\n\n* Description: {concern_5_description}\n* Likely Driver(s): {concern_5_drivers}"
+        },
+        {
+          "title": "LAB REVIEW SUMMARY",
+          "content": "{lab_review_content}"
+        },
+        {
+          "title": "RECOMMENDED FOLLOW-UP TESTING",
+          "content": "**Test Name:** {test_name_1}\n\n* Purpose: {test_purpose_1}\n\n**Test Name:** {test_name_2}\n\n* Purpose: {test_purpose_2}\n* Discount Code (if applicable): {discount_code}\n* Notes: {test_notes}"
+        }
+      ]
+    },
+    {
+      "title": "SECTION 2: NUTRITION",
+      "type": "section",
+      "subsections": [
+        {
+          "title": "NUTRITION FOCUS",
+          "content": "**Primary Nutrition Goal:** {primary_nutrition_goal}\n\n**Hydration Target:** {hydration_target}\n\n### **Core Habits**\n\n1. {core_habit_1}\n2. {core_habit_2}\n3. {core_habit_3}\n4. {core_habit_4}\n\n### **Additional Nutrition Supports**\n\n* {additional_support_1}\n* {additional_support_2}\n\n**Why This Nutrition Strategy Helps:** {why_nutrition_helps}"
+        },
+        {
+          "title": "MACRO RECOMMENDATIONS",
+          "content": "**Program Length:** {program_length}\n\n* Calories: {calories}\n* Protein: {protein}\n* Carbohydrates: {carbohydrates}\n* Fat: {fat}\n* Fiber: {fiber}"
+        },
+        {
+          "title": "PLATE & FOOD RECOMMENDATIONS",
+          "content": "{food_recommendations_content}"
+        }
+      ]
+    },
+    {
+      "title": "SECTION 3: LIFESTYLE & MOVEMENT",
+      "type": "section",
+      "content": "**Daily Steps Target:** {daily_steps_target}\n\n**Strength Training:**\n\n* Frequency: {strength_frequency}\n* Split: {strength_split}\n\n### **Stress & Nervous System Support**\n\n* {stress_support_1}\n* {stress_support_2}\n* {stress_support_3}\n\n**Avoid or Be Mindful Of:** {avoid_mindful}"
+    },
+    {
+      "title": "SECTION 4: SUPPLEMENT PROTOCOL",
+      "type": "section",
+      "subsections": [
+        {
+          "title": "Supplements to Pause or Adjust",
+          "content": "* {pause_supplement_1}\n* {pause_supplement_2}"
+        },
+        {
+          "title": "Active Supplements",
+          "content": "{active_supplements_content}"
+        },
+        {
+          "title": "SUPPLEMENT TITRATION SCHEDULE (IF APPLICABLE)",
+          "content": "Week 1: {titration_week_1}\nWeek 2: {titration_week_2}\nWeek 3: {titration_week_3}"
+        }
+      ]
+    },
+    {
+      "title": "WHAT TO EXPECT",
+      "type": "section",
+      "content": "Early changes (weeks 1–4): {early_changes}\nMid-phase changes (weeks 4–8): {mid_changes}\nLonger-term changes (8–12+ weeks): {long_term_changes}"
+    },
+    {
+      "title": "WHAT HAPPENS AFTER THIS PHASE?",
+      "type": "section",
+      "content": "Criteria to progress: {progress_criteria}\nNext phase focus: {next_phase_focus}"
+    },
+    {
+      "title": "Goals Action Plan",
+      "type": "table",
+      "content": {
+        "headers": ["Goal", "Action", ""],
+        "rows": [
+          ["{goal_1}", "{action_1}", ""],
+          ["{goal_2}", "{action_2}", ""],
+          ["{goal_3}", "{action_3}", ""]
+        ]
+      }
+    },
+    {
+      "title": "FOLLOW-UP & NEXT STEPS",
+      "type": "section",
+      "content": "* Follow-Up Recommended: {follow_up_recommended}\n* Booking Link (if applicable): {booking_link}"
+    },
+    {
+      "title": "DISCLAIMER",
+      "type": "section",
+      "content": "All recommendations are for educational purposes only and are not intended to replace medical advice, diagnosis, or treatment. Always consult your healthcare provider before starting, stopping, or changing any supplement or medication."
+    }
+  ]
+}
