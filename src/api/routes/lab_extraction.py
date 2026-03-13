@@ -101,11 +101,13 @@ async def extract_labs(files: List[UploadFile] = File(...)):
             # Count markers
             markers_count = sum(len(report.results) for report in lab_data.reports)
             
+            # Include both metadata and full JSON data in response
             extracted_labs.append({
                 "type": lab_type,
                 "filename": file.filename,
                 "json_file": json_filename,
-                "markers_count": markers_count
+                "markers_count": markers_count,
+                "data": lab_dict,
             })
         
         processing_time = time.time() - start_time
