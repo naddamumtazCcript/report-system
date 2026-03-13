@@ -15,6 +15,7 @@ from core.data_mapper import extract_data
 from core.template_populator import populate
 from ai.gemini_lab_extractor import analyze_lab_with_gemini
 from utils.cloudinary_helper import upload_pdf_bytes
+from utils.error_handler import logger
 
 router = APIRouter()
 
@@ -32,18 +33,30 @@ async def generate_protocol(
     Generate protocol with lab reports and save to DB
     """
     try:
+        logger.info(
+            f"[practitioner.generate_protocol] user_id={user_id}, "
+            f"client_id={client_id}, template_type={template_type}, "
+            f"num_lab_reports={len(lab_reports)}"
+        )
+
         # Parse JSON strings
         doc_types_list = json.loads(doc_types)
         libraries_list = json.loads(libraries)
+        logger.info(
+            f"[practitioner.generate_protocol] Parsed doc_types={doc_types_list}, "
+            f"libraries={libraries_list}"
+        )
         
         # Save questionnaire
         questionnaire_path = f"src/data/uploads/{user_id}_questionnaire.pdf"
         Path(questionnaire_path).parent.mkdir(parents=True, exist_ok=True)
-        
+        logger.info(f"[practitioner.generate_protocol] Saving questionnaire to {questionnaire_path}")
+
         with open(questionnaire_path, "wb") as f:
             f.write(await questionnaire.read())
         
         # Extract questionnaire
+        logger.info(f"[practitioner.generate_protocol] Extracting text from {questionnaire_path}")
         extractor = PDFExtractor(questionnaire_path)
         text = extractor.extract_text()
         
@@ -51,12 +64,21 @@ async def generate_protocol(
         with open(text_file, 'w') as f:
             f.write(text)
         
+        logger.info(f"[practitioner.generate_protocol] Text saved to {text_file}, starting extract_data")
         intake_data = extract_data(text_file)
+        logger.info(
+            f"[practitioner.generate_protocol] extract_data complete; "
+            f"top-level keys={list(intake_data.keys())}"
+        )
         
         # Process lab reports
         lab_data_list = []
         for i, (lab_file, doc_type) in enumerate(zip(lab_reports, doc_types_list)):
             lab_path = f"src/data/uploads/{user_id}_lab_{i}_{doc_type}.pdf"
+            logger.info(
+                f"[practitioner.generate_protocol] Saving lab {i} doc_type={doc_type} "
+                f"to {lab_path}"
+            )
             
             with open(lab_path, "wb") as f:
                 f.write(await lab_file.read())
@@ -64,14 +86,18 @@ async def generate_protocol(
             # Route by doc_type
             if doc_type == 'dutch':
                 from ai.gemini_extractors.dutch_extraction import extract_dutch_test
+                logger.info(f"[practitioner.generate_protocol] Routing DUTCH lab to gemini extractor")
                 lab_result = extract_dutch_test(lab_path)
             elif doc_type == 'gi_map':
                 from ai.gemini_extractors.gi_map import extract_gi_map
+                logger.info(f"[practitioner.generate_protocol] Routing GI-MAP lab to gemini extractor")
                 lab_result = extract_gi_map(lab_path)
             elif doc_type == 'bloodwork':
                 from ai.gemini_extractors.functional_bloodwork import extract_bloodwork
+                logger.info(f"[practitioner.generate_protocol] Routing bloodwork lab to gemini extractor")
                 lab_result = extract_bloodwork(lab_path)
             else:
+                logger.info(f"[practitioner.generate_protocol] Routing lab to generic Gemini analyzer")
                 lab_result = analyze_lab_with_gemini(lab_path)
             
             lab_data_list.append({
@@ -79,12 +105,15 @@ async def generate_protocol(
                 "data": lab_result.model_dump() if hasattr(lab_result, 'model_dump') else lab_result
             })
         
-        # Generate protocol
-        template_path = "/Users/rizwanhabib/Desktop/hassaanccript/new/report-system/templates/ProtocolTemplate.md"
+        # Generate protocol – use project root (one level above src)
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
+        template_path = project_root / "templates" / "ProtocolTemplate.md"
+        logger.info(f"[practitioner.generate_protocol] Using template_path={template_path}")
         json_file = f"src/data/uploads/{user_id}_data.json"
         
         with open(json_file, 'w') as f:
             json.dump(intake_data, f, indent=2)
+        logger.info(f"[practitioner.generate_protocol] Intake JSON saved to {json_file}")
         
         output_file = f"src/data/uploads/{user_id}_protocol.md"
         
@@ -95,11 +124,20 @@ async def generate_protocol(
             if isinstance(lab['data'], LabData):
                 combined_labs.reports.extend(lab['data'].reports)
         
+        logger.info(
+            f"[practitioner.generate_protocol] Calling populate with "
+            f"output_file={output_file}, num_combined_labs={len(combined_labs.reports)}"
+        )
         populate(template_path, json_file, output_file, combined_labs if combined_labs.reports else None)
+        logger.info(f"[practitioner.generate_protocol] Template population complete")
         
         # Read generated protocol
         with open(output_file, 'r') as f:
             protocol_markdown = f.read()
+        logger.info(
+            f"[practitioner.generate_protocol] Generated protocol length={len(protocol_markdown)} "
+            f"bytes; starting DB save"
+        )
         
         # Save to DB
         conn = get_db_connection()
@@ -121,6 +159,9 @@ async def generate_protocol(
         
         protocol_id = cur.fetchone()['id']
         conn.commit()
+        logger.info(
+            f"[practitioner.generate_protocol] Saved protocol to DB with id={protocol_id}"
+        )
         
         cur.close()
         conn.close()
@@ -133,6 +174,12 @@ async def generate_protocol(
         }
         
     except Exception as e:
+        # Log full traceback for debugging
+        import traceback
+        logger.error(
+            f"[practitioner.generate_protocol] Unexpected error: {e}",
+            exc_info=True
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/practitioner/edit-protocol/{protocol_id}")
@@ -187,11 +234,9 @@ async def finalize_protocol(protocol_id: int):
     Finalize protocol: generate PDF and update status
     """
     try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.units import inch
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-        from io import BytesIO
+        logger.info(f"[practitioner.finalize_protocol] Start finalize for protocol_id={protocol_id}")
+
+        from utils.pdf_formatter import markdown_to_pdf
         
         conn = get_db_connection()
         cur = conn.cursor()
@@ -201,62 +246,62 @@ async def finalize_protocol(protocol_id: int):
         row = cur.fetchone()
         
         if not row:
+            logger.info(f"[practitioner.finalize_protocol] Protocol not found id={protocol_id}")
             raise HTTPException(status_code=404, detail="Protocol not found")
         
         if row['status'] != 'draft':
+            logger.info(
+                f"[practitioner.finalize_protocol] Protocol already finalized or not draft "
+                f"id={protocol_id}, status={row['status']}"
+            )
             raise HTTPException(status_code=400, detail="Protocol already finalized")
         
         markdown = row['protocol']['markdown']
+        logger.info(
+            f"[practitioner.finalize_protocol] Loaded protocol markdown length={len(markdown)} "
+            f"for id={protocol_id}"
+        )
         
-        # Generate PDF
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
-        styles = getSampleStyleSheet()
-        story = []
-        
-        for line in markdown.split('\n'):
-            line = line.strip()
-            if not line:
-                story.append(Spacer(1, 0.2*inch))
-            elif line.startswith('# '):
-                story.append(Paragraph(line[2:], styles['Title']))
-                story.append(Spacer(1, 0.3*inch))
-            elif line.startswith('## '):
-                story.append(Paragraph(line[3:], styles['Heading1']))
-                story.append(Spacer(1, 0.2*inch))
-            elif line.startswith('### '):
-                story.append(Paragraph(line[4:], styles['Heading2']))
-                story.append(Spacer(1, 0.1*inch))
-            elif line.startswith(('* ', '- ')):
-                story.append(Paragraph('• ' + line[2:], styles['Normal']))
-            elif line != '---':
-                story.append(Paragraph(line, styles['Normal']))
-        
-        doc.build(story)
-        pdf_bytes = buffer.getvalue()
+        # Generate formatted PDF using the new formatter
+        logger.info(f"[practitioner.finalize_protocol] Building PDF for protocol_id={protocol_id}")
+        pdf_bytes = markdown_to_pdf(markdown)
+        logger.info(
+            f"[practitioner.finalize_protocol] Generated PDF bytes={len(pdf_bytes)} "
+            f"for protocol_id={protocol_id}"
+        )
         
         # Upload to Cloudinary
+        logger.info(f"[practitioner.finalize_protocol] Uploading PDF to Cloudinary for protocol_id={protocol_id}")
         cloudinary_result = upload_pdf_bytes(pdf_bytes, f"protocol_{protocol_id}")
+        logger.info(
+            f"[practitioner.finalize_protocol] Uploaded PDF to Cloudinary url={cloudinary_result.get('url')}"
+        )
         
         # Update DB with Cloudinary URL
         cur.execute(
             'UPDATE "Protocol" SET status = %s, pdf_url = %s WHERE id = %s',
-            ('final', cloudinary_result['url'], protocol_id)
+            ('final', cloudinary_result['url'], protocol_id),
         )
         
         conn.commit()
         cur.close()
         conn.close()
         
+        logger.info(f"[practitioner.finalize_protocol] Finalized protocol_id={protocol_id}")
+
         return {
             "protocol_id": protocol_id,
             "status": "final",
-            "pdf_url": cloudinary_result['url']
+            "pdf_url": cloudinary_result['url'],
         }
         
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(
+            f"[practitioner.finalize_protocol] Unexpected error: {e}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/practitioner/reopen-protocol/{protocol_id}")
@@ -364,4 +409,59 @@ async def download_pdf(protocol_id: int):
     except HTTPException:
         raise
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/practitioner/protocol/{protocol_id}/preview-pdf")
+async def preview_pdf(protocol_id: int):
+    """
+    Generate and return a PDF preview (works for draft or final protocols).
+    This generates the PDF on-the-fly without saving to Cloudinary.
+    """
+    try:
+        from fastapi.responses import Response
+        from utils.pdf_formatter import markdown_to_pdf
+        
+        logger.info(f"[practitioner.preview_pdf] Generating preview for protocol_id={protocol_id}")
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute('SELECT protocol FROM "Protocol" WHERE id = %s', (protocol_id,))
+        row = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Protocol not found")
+        
+        markdown = row['protocol'].get('markdown', '')
+        if not markdown:
+            raise HTTPException(status_code=400, detail="Protocol has no content")
+        
+        # Generate PDF
+        pdf_bytes = markdown_to_pdf(markdown)
+        
+        logger.info(
+            f"[practitioner.preview_pdf] Generated preview PDF bytes={len(pdf_bytes)} "
+            f"for protocol_id={protocol_id}"
+        )
+        
+        # Return PDF directly
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename=protocol_{protocol_id}_preview.pdf"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"[practitioner.preview_pdf] Unexpected error: {e}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e))
