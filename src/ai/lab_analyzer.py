@@ -97,29 +97,79 @@ Use clear, supportive, non-alarmist language. Do not diagnose."""
 
 def analyze_lab_results(lab_results: List[LabResult]) -> List[LabResult]:
     """
-    Analyze ALL lab results and add structured details to each marker.
+    Analyze ALL lab results in a single GPT call and add structured details.
     """
     if not lab_results:
         return []
 
+    import json
     logger.info(f"Analyzing {len(lab_results)} lab results...")
 
-    for result in lab_results:
-        if is_out_of_range(result.flag):
-            logger.info(f"Out-of-range marker detected: {result.test_name} = {result.value} (Flag: {result.flag})")
+    # Build batch payload
+    markers_payload = [
+        {
+            "index": i,
+            "marker": r.test_name,
+            "value": r.value,
+            "unit": r.unit,
+            "range": r.reference_range,
+            "flag": r.flag
+        }
+        for i, r in enumerate(lab_results)
+    ]
 
-        details = generate_marker_details(
-            marker_name=result.test_name,
-            value=result.value,
-            unit=result.unit,
-            reference_range=result.reference_range,
-            flag=result.flag
+    prompt = f"""You are a functional health practitioner writing a client protocol report.
+
+For each lab marker below, return structured details.
+
+Markers:
+{json.dumps(markers_payload, indent=2)}
+
+Return ONLY a JSON array with one object per marker in the same order:
+[
+  {{
+    "index": 0,
+    "what_we_found": "1 sentence: state the value, whether within/above/below range, and what this marker measures",
+    "why_this_matters": "1-2 sentences: clinical significance for this client",
+    "symptoms": "comma-separated list of symptoms this level can contribute to"
+  }},
+  ...
+]
+
+Use clear, supportive, non-alarmist language. Do not diagnose."""
+
+    try:
+        api_key = os.getenv('OPENAI_API_KEY')
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
         )
-        result.what_we_found = details.get('what_we_found', '')
-        result.why_this_matters = details.get('why_this_matters', '')
-        result.symptoms = details.get('symptoms', '')
+        result = response.choices[0].message.content.strip()
+        if result.startswith('```json'):
+            result = result[7:]
+        if result.startswith('```'):
+            result = result[3:]
+        if result.endswith('```'):
+            result = result[:-3]
 
-    logger.info(f"Generated details for {len(lab_results)} markers")
+        details_list = json.loads(result.strip())
+        details_map = {d['index']: d for d in details_list}
+
+        for i, r in enumerate(lab_results):
+            if is_out_of_range(r.flag):
+                logger.info(f"Out-of-range: {r.test_name} = {r.value} (Flag: {r.flag})")
+            d = details_map.get(i, {})
+            r.what_we_found = d.get('what_we_found', '')
+            r.why_this_matters = d.get('why_this_matters', '')
+            r.symptoms = d.get('symptoms', '')
+
+        logger.info(f"Generated details for {len(lab_results)} markers in 1 API call")
+
+    except Exception as e:
+        logger.error(f"Batch lab analysis failed: {e}")
+
     return lab_results
 
 

@@ -13,9 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from db.database import get_db_connection
 from core.pdf_extractor import PDFExtractor
-from core.json_parser import parse_questionnaire_json
-from core.schema import LabResult
-from ai.lab_analyzer import analyze_lab_results, build_lab_markers_for_protocol
+from ai.lab_analyzer import build_lab_markers_for_protocol
 from ai.lab_report_generator import generate_lab_interpretation_json
 from ai.knowledge_base import (
     get_nutrition_recommendations,
@@ -111,11 +109,17 @@ async def generate_protocol(
         q_path = upload_dir / f"{user_id}_questionnaire.pdf"
         q_path.write_bytes(await questionnaire.read())
         text = PDFExtractor(str(q_path)).extract_text()
-        intake_data = parse_questionnaire_json({'text': text})
 
-        # Fallback client name
+        # Save text and use data_mapper (GPT) to extract structured intake data from PDF text
+        text_file = str(upload_dir / f"{user_id}_text.txt")
+        with open(text_file, 'w') as f:
+            f.write(text)
+        from core.data_mapper import extract_data
+        intake_data = extract_data(text_file)
+
+        # Client name from extracted data
         pi = intake_data.get('personal_info', {})
-        client_name = f"{pi.get('legal_first_name', '')} {pi.get('last_name', '')}" .strip() or 'Client'
+        client_name = f"{pi.get('legal_first_name', pi.get('name', ''))} {pi.get('last_name', '')}".strip() or 'Client'
 
         # Process lab reports
         lab_results = []
@@ -126,31 +130,12 @@ async def generate_protocol(
             lab_path = str(upload_dir / f"{user_id}_lab_{i}_{doc_type}.pdf")
             Path(lab_path).write_bytes(await lab_file.read())
 
-            if doc_type == 'dutch':
-                from ai.gemini_extractors.dutch_extraction import extract_dutch_test
-                lab_result = extract_dutch_test(lab_path)
-            elif doc_type == 'gi_map':
-                from ai.gemini_extractors.gi_map import extract_gi_map
-                lab_result = extract_gi_map(lab_path)
-            elif doc_type == 'bloodwork':
-                from ai.gemini_extractors.functional_bloodwork import extract_bloodwork
-                lab_result = extract_bloodwork(lab_path)
-            else:
-                lab_result = analyze_lab_with_gemini(lab_path)
+            lab_data = analyze_lab_with_gemini(lab_path)
+            report_type = lab_data.reports[0].report_type if lab_data.reports else doc_type
+            for report in lab_data.reports:
+                lab_results.extend(report.results)
 
-            raw = lab_result.model_dump() if hasattr(lab_result, 'model_dump') else lab_result
-            report_type = doc_type
-            for report in raw.get('reports', []):
-                for r in report.get('results', []):
-                    lab_results.append(LabResult(
-                        test_name=r.get('test_name', ''),
-                        value=r.get('value', ''),
-                        unit=r.get('unit', ''),
-                        reference_range=r.get('reference_range', ''),
-                        flag=r.get('flag', '')
-                    ))
-
-        analyzed = analyze_lab_results(lab_results) if lab_results else []
+        analyzed = lab_results  # already analyzed inside extractors
         lab_markers = build_lab_markers_for_protocol(analyzed)
 
         # Build protocol JSON
@@ -172,7 +157,7 @@ async def generate_protocol(
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO "Protocol" (protocol, status, "clientId", "createdById")
-            VALUES (%s, 'draft', %s, %s)
+            VALUES (%s, 'pending_approval', %s, %s)
             RETURNING id
         """, (json.dumps({
             'protocol_json': protocol_json,
@@ -187,7 +172,7 @@ async def generate_protocol(
         logger.info(f"[generate_protocol] Saved protocol id={protocol_id}")
         return {
             "protocol_id": protocol_id,
-            "status": "draft",
+            "status": "pending_approval",
             "has_lab_report": lab_report_json is not None
         }
 
@@ -322,6 +307,117 @@ async def finalize_protocol(protocol_id: int):
         raise
     except Exception as e:
         logger.error(f"[finalize_protocol] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/practitioner/submit-for-approval/{protocol_id}")
+async def submit_for_approval(protocol_id: int):
+    """
+    Submit a draft protocol for admin approval (status: draft -> pending_approval)
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT status FROM "Protocol" WHERE id = %s', (protocol_id,))
+        row = cur.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Protocol not found")
+        if row['status'] != 'draft':
+            raise HTTPException(status_code=400, detail=f"Only draft protocols can be submitted. Current status: {row['status']}")
+
+        cur.execute(
+            'UPDATE "Protocol" SET status = %s WHERE id = %s',
+            ('pending_approval', protocol_id)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        logger.info(f"[submit_for_approval] Protocol {protocol_id} submitted for admin approval")
+        return {"protocol_id": protocol_id, "status": "pending_approval"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[submit_for_approval] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/practitioner/approve-protocol/{protocol_id}")
+async def approve_protocol(protocol_id: int):
+    """
+    Admin approves protocol: generates PDFs, uploads to Cloudinary (status: pending_approval -> final)
+    """
+    try:
+        from core.html_pdf_generator import generate_protocol_pdf, generate_lab_report_pdf
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT status, protocol, "clientId" FROM "Protocol" WHERE id = %s', (protocol_id,))
+        row = cur.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Protocol not found")
+        if row['status'] != 'pending_approval':
+            raise HTTPException(status_code=400, detail=f"Only pending_approval protocols can be approved. Current status: {row['status']}")
+
+        stored = row['protocol']
+        protocol_json = stored.get('protocol_json', {})
+        lab_report_json = stored.get('lab_report_json')
+        client_id = row['clientId']
+        client_name = protocol_json.get('client_name', 'client')
+
+        # Generate + upload PDF 1 (Protocol)
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
+            protocol_pdf_path = f.name
+        generate_protocol_pdf(protocol_json, protocol_pdf_path)
+        protocol_cloudinary = upload_pdf_bytes(Path(protocol_pdf_path).read_bytes(), f"protocol_{protocol_id}")
+
+        # Generate + upload PDF 2 (Lab Report) if present
+        lab_report_url = None
+        if lab_report_json:
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
+                lab_pdf_path = f.name
+            generate_lab_report_pdf(lab_report_json, lab_pdf_path)
+            lab_cloudinary = upload_pdf_bytes(Path(lab_pdf_path).read_bytes(), f"lab_report_{protocol_id}")
+            lab_report_url = lab_cloudinary.get('url')
+
+        cur.execute(
+            'UPDATE "Protocol" SET status = %s, pdf_url = %s, lab_report_pdf_url = %s WHERE id = %s',
+            ('final', protocol_cloudinary['url'], lab_report_url, protocol_id)
+        )
+        conn.commit()
+
+        # Initialize client agent (non-fatal)
+        try:
+            from ai.client_context import ClientContext
+            from ai.client_chat import ClientChat
+            from api.config import CLIENT_PROTOCOLS_DIR
+            import json as _json
+            context = ClientContext(str(client_id), CLIENT_PROTOCOLS_DIR)
+            context.save_protocol(_json.dumps(protocol_json), {
+                'name': client_name, 'client_id': client_id, 'protocol_id': protocol_id
+            })
+            ClientChat(str(client_id), CLIENT_PROTOCOLS_DIR).initialize()
+        except Exception as agent_err:
+            logger.warning(f"[approve_protocol] Client agent init failed (non-fatal): {agent_err}")
+
+        cur.close()
+        conn.close()
+
+        logger.info(f"[approve_protocol] Protocol {protocol_id} approved and finalized")
+        return {
+            "protocol_id": protocol_id,
+            "status": "final",
+            "pdf_url": protocol_cloudinary['url'],
+            "lab_report_pdf_url": lab_report_url,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[approve_protocol] Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
