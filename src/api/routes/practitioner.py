@@ -5,19 +5,87 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from typing import List, Optional
 import json
 import sys
+import tempfile
 from pathlib import Path
+from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from db.database import get_db_connection
 from core.pdf_extractor import PDFExtractor
-from core.data_mapper import extract_data
-from core.template_populator import populate
+from core.json_parser import parse_questionnaire_json
+from core.schema import LabResult
+from ai.lab_analyzer import analyze_lab_results, build_lab_markers_for_protocol
+from ai.lab_report_generator import generate_lab_interpretation_json
+from ai.knowledge_base import (
+    get_nutrition_recommendations,
+    analyze_symptom_drivers,
+    generate_lifestyle_recommendations,
+    generate_supplement_recommendations,
+    generate_nutrition_recommendations,
+    generate_what_to_expect,
+    generate_goals_action_plan,
+)
 from ai.gemini_lab_extractor import analyze_lab_with_gemini
 from utils.cloudinary_helper import upload_pdf_bytes
 from utils.error_handler import logger
 
 router = APIRouter()
+
+
+def _build_protocol_json(intake_data: dict, lab_markers: list, client_name: str) -> dict:
+    """Run AI recommendations and assemble protocol JSON."""
+    symptom_data = analyze_symptom_drivers(intake_data)
+    lifestyle_data = generate_lifestyle_recommendations(intake_data)
+    supplement_data = generate_supplement_recommendations(intake_data)
+    nutrition_data = generate_nutrition_recommendations(intake_data)
+    macros = get_nutrition_recommendations(intake_data).get('macros', {})
+    what_to_expect = generate_what_to_expect(intake_data, supplement_data)
+    goals_plan = generate_goals_action_plan(intake_data, nutrition_data, lifestyle_data, supplement_data)
+
+    concerns = [
+        {'description': sd['symptom'], 'drivers': sd['drivers']}
+        for sd in symptom_data.get('symptom_drivers', [])[:5]
+    ]
+
+    return {
+        'client_name': client_name,
+        'date': datetime.now().strftime('%B %d, %Y'),
+        'focus_items': nutrition_data.get('focus_items', []),
+        'concerns': concerns,
+        'lab_markers': lab_markers,
+        'follow_up_tests': [],
+        'video_link': '',
+        'primary_nutrition_goal': 'Balance blood sugar and support hormone health',
+        'hydration_target': '80-100 oz water daily',
+        'core_habits': nutrition_data.get('core_habits', []),
+        'additional_supports': [],
+        'why_nutrition_helps': nutrition_data.get('why_this_helps', ''),
+        'program_length': '12 weeks',
+        'calories': str(macros.get('calories', '')),
+        'protein': f"{macros.get('protein_g', '')}g",
+        'carbohydrates': f"{macros.get('carbs_g', '')}g",
+        'fat': f"{macros.get('fat_g', '')}g",
+        'fiber': f"{macros.get('fiber_g', 30)}g",
+        'food_recommendations_content': '',
+        'daily_steps_target': lifestyle_data.get('daily_steps_target', '8,000-10,000 steps'),
+        'strength_frequency': lifestyle_data.get('strength_training', {}).get('frequency', ''),
+        'strength_split': lifestyle_data.get('strength_training', {}).get('split', ''),
+        'stress_supports': lifestyle_data.get('stress_support', []),
+        'avoid_mindful': ', '.join(lifestyle_data.get('avoid_or_mindful', [])),
+        'pause_supplements': supplement_data.get('supplements_to_pause', []),
+        'active_supplements': supplement_data.get('active_supplements', []),
+        'titration_schedule': supplement_data.get('titration_schedule', {}),
+        'early_changes': what_to_expect.get('early_changes', ''),
+        'mid_changes': what_to_expect.get('mid_changes', ''),
+        'long_term_changes': what_to_expect.get('long_term_changes', ''),
+        'progress_criteria': what_to_expect.get('progress_criteria', ''),
+        'next_phase_focus': what_to_expect.get('next_phase_focus', ''),
+        'goals': goals_plan,
+        'follow_up_recommended': 'Yes',
+        'booking_link': '',
+    }
+
 
 @router.post("/practitioner/generate-protocol")
 async def generate_protocol(
@@ -33,202 +101,98 @@ async def generate_protocol(
     Generate protocol with lab reports and save to DB
     """
     try:
-        logger.info(
-            f"[practitioner.generate_protocol] user_id={user_id}, "
-            f"client_id={client_id}, template_type={template_type}, "
-            f"num_lab_reports={len(lab_reports)}"
-        )
-
-<<<<<<< Updated upstream
-        # Parse JSON strings
-=======
->>>>>>> Stashed changes
         doc_types_list = json.loads(doc_types)
-        libraries_list = json.loads(libraries)
-        logger.info(
-            f"[practitioner.generate_protocol] Parsed doc_types={doc_types_list}, "
-            f"libraries={libraries_list}"
-        )
-<<<<<<< Updated upstream
-        
-=======
+        logger.info(f"[generate_protocol] user={user_id} client={client_id} labs={len(lab_reports)}")
 
->>>>>>> Stashed changes
-        # Save questionnaire
-        questionnaire_path = f"src/data/uploads/{user_id}_questionnaire.pdf"
-        Path(questionnaire_path).parent.mkdir(parents=True, exist_ok=True)
-        logger.info(f"[practitioner.generate_protocol] Saving questionnaire to {questionnaire_path}")
+        upload_dir = Path(f"src/data/uploads")
+        upload_dir.mkdir(parents=True, exist_ok=True)
 
-        with open(questionnaire_path, "wb") as f:
-            f.write(await questionnaire.read())
+        # Save + extract questionnaire
+        q_path = upload_dir / f"{user_id}_questionnaire.pdf"
+        q_path.write_bytes(await questionnaire.read())
+        text = PDFExtractor(str(q_path)).extract_text()
+        intake_data = parse_questionnaire_json({'text': text})
 
-        # Extract questionnaire
-        logger.info(f"[practitioner.generate_protocol] Extracting text from {questionnaire_path}")
-        extractor = PDFExtractor(questionnaire_path)
-        text = extractor.extract_text()
+        # Fallback client name
+        pi = intake_data.get('personal_info', {})
+        client_name = f"{pi.get('legal_first_name', '')} {pi.get('last_name', '')}" .strip() or 'Client'
 
-        text_file = f"src/data/uploads/{user_id}_text.txt"
-        with open(text_file, 'w') as f:
-            f.write(text)
-<<<<<<< Updated upstream
-        
-=======
-
->>>>>>> Stashed changes
-        logger.info(f"[practitioner.generate_protocol] Text saved to {text_file}, starting extract_data")
-        intake_data = extract_data(text_file)
-        logger.info(
-            f"[practitioner.generate_protocol] extract_data complete; "
-            f"top-level keys={list(intake_data.keys())}"
-        )
-<<<<<<< Updated upstream
-        
-=======
-
->>>>>>> Stashed changes
         # Process lab reports
-        lab_data_list = []
-        for i, (lab_file, doc_type) in enumerate(zip(lab_reports, doc_types_list)):
-            lab_path = f"src/data/uploads/{user_id}_lab_{i}_{doc_type}.pdf"
-            logger.info(
-                f"[practitioner.generate_protocol] Saving lab {i} doc_type={doc_type} "
-                f"to {lab_path}"
-            )
-<<<<<<< Updated upstream
-            
-=======
+        lab_results = []
+        lab_report_json = None
+        report_type = 'Lab Report'
 
->>>>>>> Stashed changes
-            with open(lab_path, "wb") as f:
-                f.write(await lab_file.read())
+        for i, (lab_file, doc_type) in enumerate(zip(lab_reports, doc_types_list)):
+            lab_path = str(upload_dir / f"{user_id}_lab_{i}_{doc_type}.pdf")
+            Path(lab_path).write_bytes(await lab_file.read())
 
             if doc_type == 'dutch':
                 from ai.gemini_extractors.dutch_extraction import extract_dutch_test
-                logger.info(f"[practitioner.generate_protocol] Routing DUTCH lab to gemini extractor")
                 lab_result = extract_dutch_test(lab_path)
             elif doc_type == 'gi_map':
                 from ai.gemini_extractors.gi_map import extract_gi_map
-                logger.info(f"[practitioner.generate_protocol] Routing GI-MAP lab to gemini extractor")
                 lab_result = extract_gi_map(lab_path)
             elif doc_type == 'bloodwork':
                 from ai.gemini_extractors.functional_bloodwork import extract_bloodwork
-                logger.info(f"[practitioner.generate_protocol] Routing bloodwork lab to gemini extractor")
                 lab_result = extract_bloodwork(lab_path)
             else:
-                logger.info(f"[practitioner.generate_protocol] Routing lab to generic Gemini analyzer")
                 lab_result = analyze_lab_with_gemini(lab_path)
 
-            lab_data_list.append({
-                "type": doc_type,
-                "data": lab_result.model_dump() if hasattr(lab_result, 'model_dump') else lab_result
-            })
-<<<<<<< Updated upstream
-        
-        # Generate protocol – use project root (one level above src)
-        project_root = Path(__file__).resolve().parent.parent.parent.parent
-        template_path = project_root / "templates" / "ProtocolTemplate.md"
-        logger.info(f"[practitioner.generate_protocol] Using template_path={template_path}")
-        json_file = f"src/data/uploads/{user_id}_data.json"
-        
-        with open(json_file, 'w') as f:
-            json.dump(intake_data, f, indent=2)
-        logger.info(f"[practitioner.generate_protocol] Intake JSON saved to {json_file}")
-        
-        output_file = f"src/data/uploads/{user_id}_protocol.md"
-        
-        # Combine lab data for template
-        from core.schema import LabData, LabReport
-        combined_labs = LabData(reports=[], summary="")
-        for lab in lab_data_list:
-            if isinstance(lab['data'], LabData):
-                combined_labs.reports.extend(lab['data'].reports)
-        
-        logger.info(
-            f"[practitioner.generate_protocol] Calling populate with "
-            f"output_file={output_file}, num_combined_labs={len(combined_labs.reports)}"
-        )
-        populate(template_path, json_file, output_file, combined_labs if combined_labs.reports else None)
-        logger.info(f"[practitioner.generate_protocol] Template population complete")
-        
-        # Read generated protocol
-        with open(output_file, 'r') as f:
-            protocol_markdown = f.read()
-=======
+            raw = lab_result.model_dump() if hasattr(lab_result, 'model_dump') else lab_result
+            report_type = doc_type
+            for report in raw.get('reports', []):
+                for r in report.get('results', []):
+                    lab_results.append(LabResult(
+                        test_name=r.get('test_name', ''),
+                        value=r.get('value', ''),
+                        unit=r.get('unit', ''),
+                        reference_range=r.get('reference_range', ''),
+                        flag=r.get('flag', '')
+                    ))
 
-        # Generate protocol PDF
-        output_file = f"src/data/uploads/{user_id}_protocol.pdf"
+        analyzed = analyze_lab_results(lab_results) if lab_results else []
+        lab_markers = build_lab_markers_for_protocol(analyzed)
 
-        protocol_data = {
-            'client_name': f"{intake_data.get('personal_info', {}).get('legal_first_name', '')} {intake_data.get('personal_info', {}).get('last_name', '')}".strip() or 'Client',
-            'health_info': intake_data.get('health_info', {}),
-            'lab_review_content': json.dumps(lab_data_list) if lab_data_list else ''
-        }
+        # Build protocol JSON
+        protocol_json = _build_protocol_json(intake_data, lab_markers, client_name)
 
-        logger.info(f"[practitioner.generate_protocol] Generating PDF to {output_file}")
-        generate_protocol_pdf(protocol_data, output_file)
+        # Build lab report JSON (only if labs present)
+        if lab_results:
+            lab_report_json = generate_lab_interpretation_json(
+                lab_results=analyzed,
+                report_type=report_type,
+                client_name=client_name,
+                client_age=str(pi.get('age', '')),
+                client_gender=pi.get('gender', 'Female'),
+                report_date=datetime.now().strftime('%B %d, %Y')
+            )
 
-        with open(output_file.replace('.pdf', '.html'), 'r') as f:
-            protocol_markdown = f.read()
-
->>>>>>> Stashed changes
-        logger.info(
-            f"[practitioner.generate_protocol] Generated protocol length={len(protocol_markdown)} "
-            f"bytes; starting DB save"
-        )
-<<<<<<< Updated upstream
-        
-=======
-
->>>>>>> Stashed changes
         # Save to DB
         conn = get_db_connection()
         cur = conn.cursor()
-
-        protocol_json = {
-            "markdown": protocol_markdown,
-            "intake_data": intake_data,
-            "lab_reports": lab_data_list,
-            "libraries": libraries_list,
-            "template_type": template_type
-        }
-
         cur.execute("""
             INSERT INTO "Protocol" (protocol, status, "clientId", "createdById")
             VALUES (%s, 'draft', %s, %s)
             RETURNING id
-        """, (json.dumps(protocol_json), client_id, int(user_id)))
-
+        """, (json.dumps({
+            'protocol_json': protocol_json,
+            'lab_report_json': lab_report_json,
+            'template_type': template_type
+        }), client_id, int(user_id)))
         protocol_id = cur.fetchone()['id']
         conn.commit()
-<<<<<<< Updated upstream
-        logger.info(
-            f"[practitioner.generate_protocol] Saved protocol to DB with id={protocol_id}"
-        )
-        
-=======
-        logger.info(f"[practitioner.generate_protocol] Saved protocol to DB with id={protocol_id}")
-
->>>>>>> Stashed changes
         cur.close()
         conn.close()
 
+        logger.info(f"[generate_protocol] Saved protocol id={protocol_id}")
         return {
             "protocol_id": protocol_id,
             "status": "draft",
-            "lab_reports_processed": len(lab_data_list)
+            "has_lab_report": lab_report_json is not None
         }
 
     except Exception as e:
-<<<<<<< Updated upstream
-        # Log full traceback for debugging
-        import traceback
-        logger.error(
-            f"[practitioner.generate_protocol] Unexpected error: {e}",
-            exc_info=True
-        )
-=======
-        logger.error(f"[practitioner.generate_protocol] Unexpected error: {e}", exc_info=True)
->>>>>>> Stashed changes
+        logger.error(f"[generate_protocol] Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -280,102 +244,84 @@ async def edit_protocol(
 @router.post("/practitioner/finalize-protocol/{protocol_id}")
 async def finalize_protocol(protocol_id: int):
     """
-    Finalize protocol: generate PDF and update status
+    Finalize protocol: generate PDFs, upload to Cloudinary, initialize client agent
     """
     try:
-<<<<<<< Updated upstream
-        logger.info(f"[practitioner.finalize_protocol] Start finalize for protocol_id={protocol_id}")
+        from core.html_pdf_generator import generate_protocol_pdf, generate_lab_report_pdf
 
-        from utils.pdf_formatter import markdown_to_pdf
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # Get protocol
-=======
-        import tempfile, os
-        from utils.pdf_formatter import markdown_to_pdf
-
-        logger.info(f"[practitioner.finalize_protocol] Start finalize for protocol_id={protocol_id}")
+        logger.info(f"[finalize_protocol] Start finalize for protocol_id={protocol_id}")
 
         conn = get_db_connection()
         cur = conn.cursor()
-
->>>>>>> Stashed changes
-        cur.execute('SELECT status, protocol FROM "Protocol" WHERE id = %s', (protocol_id,))
+        cur.execute('SELECT status, protocol, "clientId" FROM "Protocol" WHERE id = %s', (protocol_id,))
         row = cur.fetchone()
 
         if not row:
-            logger.info(f"[practitioner.finalize_protocol] Protocol not found id={protocol_id}")
             raise HTTPException(status_code=404, detail="Protocol not found")
-        
         if row['status'] != 'draft':
-            logger.info(
-                f"[practitioner.finalize_protocol] Protocol already finalized or not draft "
-                f"id={protocol_id}, status={row['status']}"
-            )
             raise HTTPException(status_code=400, detail="Protocol already finalized")
-<<<<<<< Updated upstream
-        
-        markdown = row['protocol']['markdown']
-        logger.info(
-            f"[practitioner.finalize_protocol] Loaded protocol markdown length={len(markdown)} "
-            f"for id={protocol_id}"
-        )
-        
-        # Generate formatted PDF using the new formatter
-        logger.info(f"[practitioner.finalize_protocol] Building PDF for protocol_id={protocol_id}")
-        pdf_bytes = markdown_to_pdf(markdown)
-        logger.info(
-            f"[practitioner.finalize_protocol] Generated PDF bytes={len(pdf_bytes)} "
-            f"for protocol_id={protocol_id}"
-        )
-        
-        # Upload to Cloudinary
-        logger.info(f"[practitioner.finalize_protocol] Uploading PDF to Cloudinary for protocol_id={protocol_id}")
-        cloudinary_result = upload_pdf_bytes(pdf_bytes, f"protocol_{protocol_id}")
-        logger.info(
-            f"[practitioner.finalize_protocol] Uploaded PDF to Cloudinary url={cloudinary_result.get('url')}"
-        )
-        
-        # Update DB with Cloudinary URL
-=======
 
-        markdown = row['protocol']['markdown']
-        logger.info(f"[practitioner.finalize_protocol] Building PDF for protocol_id={protocol_id}")
+        stored = row['protocol']
+        protocol_json = stored.get('protocol_json', {})
+        lab_report_json = stored.get('lab_report_json')
+        client_id = row['clientId']
+        client_name = protocol_json.get('client_name', 'client')
 
-        pdf_bytes = markdown_to_pdf(markdown)
-        logger.info(f"[practitioner.finalize_protocol] Generated PDF bytes={len(pdf_bytes)}")
+        # Generate PDF 1 (Protocol)
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
+            protocol_pdf_path = f.name
+        generate_protocol_pdf(protocol_json, protocol_pdf_path)
+        protocol_pdf_bytes = Path(protocol_pdf_path).read_bytes()
+        protocol_cloudinary = upload_pdf_bytes(protocol_pdf_bytes, f"protocol_{protocol_id}")
+        logger.info(f"[finalize_protocol] Protocol PDF uploaded: {protocol_cloudinary.get('url')}")
 
-        cloudinary_result = upload_pdf_bytes(pdf_bytes, f"protocol_{protocol_id}")
-        logger.info(f"[practitioner.finalize_protocol] Uploaded to Cloudinary url={cloudinary_result.get('url')}")
+        # Generate PDF 2 (Lab Report) if present
+        lab_report_url = None
+        if lab_report_json:
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
+                lab_pdf_path = f.name
+            generate_lab_report_pdf(lab_report_json, lab_pdf_path)
+            lab_pdf_bytes = Path(lab_pdf_path).read_bytes()
+            lab_cloudinary = upload_pdf_bytes(lab_pdf_bytes, f"lab_report_{protocol_id}")
+            lab_report_url = lab_cloudinary.get('url')
+            logger.info(f"[finalize_protocol] Lab report PDF uploaded: {lab_report_url}")
 
->>>>>>> Stashed changes
         cur.execute(
-            'UPDATE "Protocol" SET status = %s, pdf_url = %s WHERE id = %s',
-            ('final', cloudinary_result['url'], protocol_id),
+            'UPDATE "Protocol" SET status = %s, pdf_url = %s, lab_report_pdf_url = %s WHERE id = %s',
+            ('final', protocol_cloudinary['url'], lab_report_url, protocol_id)
         )
-
         conn.commit()
         cur.close()
         conn.close()
-<<<<<<< Updated upstream
-        
-=======
 
->>>>>>> Stashed changes
-        logger.info(f"[practitioner.finalize_protocol] Finalized protocol_id={protocol_id}")
+        # Initialize client agent (non-fatal)
+        try:
+            from ai.client_context import ClientContext
+            from ai.client_chat import ClientChat
+            from api.config import CLIENT_PROTOCOLS_DIR
+            import json as _json
+            context = ClientContext(str(client_id), CLIENT_PROTOCOLS_DIR)
+            context.save_protocol(_json.dumps(protocol_json), {
+                'name': client_name,
+                'client_id': client_id,
+                'protocol_id': protocol_id
+            })
+            chunks = ClientChat(str(client_id), CLIENT_PROTOCOLS_DIR).initialize()
+            logger.info(f"[finalize_protocol] Client agent initialized, chunks={chunks}")
+        except Exception as agent_err:
+            logger.warning(f"[finalize_protocol] Client agent init failed (non-fatal): {agent_err}")
 
         return {
             "protocol_id": protocol_id,
             "status": "final",
-            "pdf_url": cloudinary_result['url'],
+            "pdf_url": protocol_cloudinary['url'],
+            "lab_report_pdf_url": lab_report_url,
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[practitioner.finalize_protocol] Unexpected error: {e}", exc_info=True)
+        logger.error(f"[finalize_protocol] Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -410,10 +356,6 @@ async def reopen_protocol(protocol_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"[practitioner.finalize_protocol] Unexpected error: {e}",
-            exc_info=True,
-        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -435,16 +377,15 @@ async def get_protocol(protocol_id: int):
         if not row:
             raise HTTPException(status_code=404, detail="Protocol not found")
 
+        stored = row['protocol']
         return {
             "protocol_id": row['id'],
             "status": row['status'],
             "client_id": row['clientId'],
             "created_by_id": row['createdById'],
-            "markdown": row['protocol']['markdown'],
-            "intake_data": row['protocol'].get('intake_data'),
-            "lab_reports": row['protocol'].get('lab_reports'),
-            "libraries": row['protocol'].get('libraries'),
-            "template_type": row['protocol'].get('template_type')
+            "protocol_json": stored.get('protocol_json'),
+            "lab_report_json": stored.get('lab_report_json'),
+            "template_type": stored.get('template_type')
         }
 
     except HTTPException:
@@ -488,61 +429,11 @@ async def download_pdf(protocol_id: int):
 @router.get("/practitioner/protocol/{protocol_id}/preview-pdf")
 async def preview_pdf(protocol_id: int):
     """
-<<<<<<< Updated upstream
-    Generate and return a PDF preview (works for draft or final protocols).
-    This generates the PDF on-the-fly without saving to Cloudinary.
-=======
     Generate and return a PDF preview (works for draft or final protocols)
->>>>>>> Stashed changes
     """
     try:
         from fastapi.responses import Response
         from utils.pdf_formatter import markdown_to_pdf
-<<<<<<< Updated upstream
-        
-        logger.info(f"[practitioner.preview_pdf] Generating preview for protocol_id={protocol_id}")
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        cur.execute('SELECT protocol FROM "Protocol" WHERE id = %s', (protocol_id,))
-        row = cur.fetchone()
-        
-        cur.close()
-        conn.close()
-        
-        if not row:
-            raise HTTPException(status_code=404, detail="Protocol not found")
-        
-        markdown = row['protocol'].get('markdown', '')
-        if not markdown:
-            raise HTTPException(status_code=400, detail="Protocol has no content")
-        
-        # Generate PDF
-        pdf_bytes = markdown_to_pdf(markdown)
-        
-        logger.info(
-            f"[practitioner.preview_pdf] Generated preview PDF bytes={len(pdf_bytes)} "
-            f"for protocol_id={protocol_id}"
-        )
-        
-        # Return PDF directly
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"inline; filename=protocol_{protocol_id}_preview.pdf"
-            }
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(
-            f"[practitioner.preview_pdf] Unexpected error: {e}",
-            exc_info=True,
-        )
-=======
 
         logger.info(f"[practitioner.preview_pdf] Generating preview for protocol_id={protocol_id}")
 
@@ -558,11 +449,15 @@ async def preview_pdf(protocol_id: int):
         if not row:
             raise HTTPException(status_code=404, detail="Protocol not found")
 
-        markdown = row['protocol'].get('markdown', '')
-        if not markdown:
+        from core.html_pdf_generator import generate_protocol_pdf
+        protocol_json = row['protocol'].get('protocol_json', {})
+        if not protocol_json:
             raise HTTPException(status_code=400, detail="Protocol has no content")
 
-        pdf_bytes = markdown_to_pdf(markdown)
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
+            tmp_path = f.name
+        generate_protocol_pdf(protocol_json, tmp_path)
+        pdf_bytes = Path(tmp_path).read_bytes()
         logger.info(f"[practitioner.preview_pdf] Generated preview PDF bytes={len(pdf_bytes)}")
 
         return Response(
@@ -575,5 +470,4 @@ async def preview_pdf(protocol_id: int):
         raise
     except Exception as e:
         logger.error(f"[practitioner.preview_pdf] Unexpected error: {e}", exc_info=True)
->>>>>>> Stashed changes
         raise HTTPException(status_code=500, detail=str(e))

@@ -11,7 +11,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from ..config import UPLOAD_DIR, OUTPUT_DIR
-from ai.gemini_lab_extractor import detect_lab_type, extract_dutch, extract_gi_map, extract_bloodwork
+from ai.gemini_lab_extractor import analyze_lab_with_gemini
+from ai.lab_analyzer import build_lab_markers_for_protocol
+from core.schema import LabResult
 
 router = APIRouter()
 
@@ -19,7 +21,7 @@ router = APIRouter()
 async def extract_labs(files: List[UploadFile] = File(...)):
     """
     Extract structured data from 1-3 lab report PDFs
-    
+
     Supports:
     - DUTCH Complete (hormone testing)
     - GI-MAP (gut health)
@@ -53,25 +55,16 @@ async def extract_labs(files: List[UploadFile] = File(...)):
             with open(temp_pdf_path, 'wb') as f:
                 f.write(pdf_content)
             
-            # Detect lab type
-            lab_type = detect_lab_type(str(temp_pdf_path))
-            logger.info(f"Detected lab type: {lab_type}")
-            
-            # Extract based on type
-            if lab_type == 'dutch':
-                lab_data = extract_dutch(str(temp_pdf_path))
-            elif lab_type == 'gi_map':
-                lab_data = extract_gi_map(str(temp_pdf_path))
-            elif lab_type == 'bloodwork':
-                lab_data = extract_bloodwork(str(temp_pdf_path))
-            else:
-                raise HTTPException(status_code=400, detail=f"Unknown lab type for {file.filename}")
-            
-            # Save JSON with type in filename
-            json_filename = f"{job_id}_{lab_type}.json"
-            json_path = OUTPUT_DIR / json_filename
-            
-            # Convert LabData to dict for JSON serialization
+            # Extract using auto-detect (handles dutch/gi_map/bloodwork/generic)
+            lab_data = analyze_lab_with_gemini(str(temp_pdf_path))
+            lab_type = lab_data.reports[0].report_type if lab_data.reports else 'unknown'
+            logger.info(f"Extracted lab type: {lab_type}")
+
+            # Flatten to LabResult list — already analyzed by extractor
+            raw_results = [r for report in lab_data.reports for r in report.results]
+            lab_markers = build_lab_markers_for_protocol(raw_results)
+
+            # Build response dict
             lab_dict = {
                 "reports": [
                     {
@@ -90,23 +83,22 @@ async def extract_labs(files: List[UploadFile] = File(...)):
                         "abnormal_markers": report.abnormal_markers
                     } for report in lab_data.reports
                 ],
-                "summary": lab_data.summary
+                "summary": lab_data.summary,
+                "markers": lab_markers
             }
-            
+
+            json_filename = f"{job_id}_{lab_type.lower().replace(' ', '_')}.json"
+            json_path = OUTPUT_DIR / json_filename
             with open(json_path, 'w') as f:
                 json.dump(lab_dict, f, indent=2)
-            
             logger.info(f"Saved JSON: {json_path}")
-            
-            # Count markers
-            markers_count = sum(len(report.results) for report in lab_data.reports)
-            
-            # Include both metadata and full JSON data in response
+
             extracted_labs.append({
                 "type": lab_type,
                 "filename": file.filename,
                 "json_file": json_filename,
-                "markers_count": markers_count,
+                "markers_count": len(raw_results),
+                "out_of_range_count": sum(1 for m in lab_markers if m['is_out_of_range']),
                 "data": lab_dict,
             })
         

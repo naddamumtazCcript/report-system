@@ -12,6 +12,7 @@ from playwright.sync_api import sync_playwright
 from typing import Dict, Any
 from datetime import datetime
 import logging
+import json
 import os
 
 logger = logging.getLogger(__name__)
@@ -75,15 +76,16 @@ def generate_protocol_pdf(protocol_data: Dict[str, Any], output_path: str) -> st
 
 
 def prepare_protocol_data(protocol_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Prepare protocol data with defaults"""
-    protocol_data['current_year'] = datetime.now().year
-    
+    """Prepare protocol data with defaults for new template"""
     defaults = {
         'client_name': 'Client',
         'date': datetime.now().strftime('%B %d, %Y'),
+        'has_labs': False,
         'focus_items': [],
         'concerns': [],
-        'lab_review_content': '',
+        'lab_markers': [],
+        'follow_up_tests': [],
+        'video_link': '',
         'primary_nutrition_goal': '',
         'hydration_target': '',
         'core_habits': [],
@@ -102,7 +104,7 @@ def prepare_protocol_data(protocol_data: Dict[str, Any]) -> Dict[str, Any]:
         'stress_supports': [],
         'avoid_mindful': '',
         'pause_supplements': [],
-        'active_supplements_content': '',
+        'active_supplements': [],
         'titration_schedule': {},
         'early_changes': '',
         'mid_changes': '',
@@ -110,17 +112,49 @@ def prepare_protocol_data(protocol_data: Dict[str, Any]) -> Dict[str, Any]:
         'progress_criteria': '',
         'next_phase_focus': '',
         'goals': [],
-        'follow_up_recommended': '',
+        'follow_up_recommended': 'Yes',
         'booking_link': '',
-        'follow_up_tests': [],
-        'video_link': ''
     }
-    
     for key, default in defaults.items():
         if key not in protocol_data:
             protocol_data[key] = default
-    
+    if protocol_data.get('lab_markers'):
+        protocol_data['has_labs'] = True
     return protocol_data
+
+
+def generate_lab_report_pdf(lab_report_json: Dict[str, Any], output_path: str) -> str:
+    """Generate EndoAxis-style lab interpretation PDF from JSON data"""
+    try:
+        logger.info("Generating lab interpretation PDF...")
+        template_path = Path(__file__).parent.parent.parent / "templates" / "lab_report_template.html"
+        with open(template_path, 'r') as f:
+            template_content = f.read()
+
+        template = Template(template_content)
+        html_content = template.render(**lab_report_json)
+
+        html_output = output_path.replace('.pdf', '.html')
+        with open(html_output, 'w') as f:
+            f.write(html_content)
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+            page.goto(f"file://{os.path.abspath(html_output)}")
+            page.pdf(
+                path=output_path,
+                format='Letter',
+                print_background=True,
+                margin={'top': '0', 'right': '0', 'bottom': '0', 'left': '0'}
+            )
+            browser.close()
+
+        logger.info(f"Lab report PDF generated: {output_path}")
+        return output_path
+    except Exception as e:
+        logger.error(f"Lab report PDF generation failed: {e}")
+        raise
 
 
 if __name__ == "__main__":

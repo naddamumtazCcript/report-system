@@ -23,49 +23,20 @@ def detect_lab_type(pdf_path: str) -> str:
 def extract_dutch(pdf_path: str) -> LabData:
     """Extract DUTCH report using Gemini"""
     from ai.gemini_extractors.dutch_extraction import extract_dutch_test
-    
-    result = extract_dutch_test(pdf_path)
-    lab_results = []
-    
-    # Convert all markers to LabResult
-    for marker in result.sex_hormones.progesterone_metabolites:
-        lab_results.append(LabResult(
-            test_name=marker.marker_name,
-            value=marker.result_value,
-            unit=marker.units,
-            reference_range=marker.normal_range,
-            flag=marker.range_flag or "Normal"
-        ))
-    
-    for marker in result.sex_hormones.estrogens_and_metabolites:
-        lab_results.append(LabResult(
-            test_name=marker.marker_name,
-            value=marker.result_value,
-            unit=marker.units,
-            reference_range=marker.normal_range,
-            flag=marker.range_flag or "Normal"
-        ))
-    
-    for marker in result.adrenal_hormones.daily_free_cortisol_cortisone:
-        lab_results.append(LabResult(
-            test_name=marker.marker_name,
-            value=marker.result_value,
-            unit=marker.units,
-            reference_range=marker.normal_range,
-            flag=marker.range_flag or "Normal"
-        ))
-    
+
+    parsed_data, lab_results = extract_dutch_test(pdf_path)
+
+    abnormal = [r.test_name for r in lab_results if r.flag and r.flag not in ('Normal', 'N')]
     lab_report = LabReport(
         report_date="",
         report_type="DUTCH Complete",
         results=lab_results,
-        key_findings=[f"Patient: {result.patient_sex}, Age: {result.patient_age}"],
-        abnormal_markers=[r.test_name for r in lab_results if r.flag and 'range' in r.flag.lower()]
+        key_findings=[f"Patient: {parsed_data.patient_sex}, Age: {parsed_data.patient_age}"],
+        abnormal_markers=abnormal
     )
-    
     return LabData(
         reports=[lab_report],
-        summary=f"DUTCH Complete analysis for {result.patient_sex} patient, age {result.patient_age}. {len(lab_results)} markers extracted."
+        summary=f"DUTCH Complete analysis for {parsed_data.patient_sex} patient, age {parsed_data.patient_age}. {len(lab_results)} markers extracted."
     )
 
 def extract_gi_map(pdf_path: str) -> LabData:
@@ -123,29 +94,17 @@ def extract_gi_map(pdf_path: str) -> LabData:
 def extract_bloodwork(pdf_path: str) -> LabData:
     """Extract Functional Bloodwork using Gemini"""
     from ai.gemini_extractors.functional_bloodwork import extract_bloodwork as gemini_extract
-    
-    result = gemini_extract(pdf_path)
-    lab_results = []
-    
-    for entry in result.results:
-        lab_results.append(LabResult(
-            test_name=entry.test_name,
-            value=entry.result,
-            unit=entry.units,
-            reference_range=entry.reference_range,
-            flag=entry.flag or "Normal"
-        ))
-    
-    abnormal = [r.test_name for r in lab_results if r.flag and r.flag != "Normal"]
-    
+
+    report_date, lab_results = gemini_extract(pdf_path)
+
+    abnormal = [r.test_name for r in lab_results if r.flag and r.flag not in ('Normal', 'N')]
     lab_report = LabReport(
-        report_date=result.report_date,
+        report_date=report_date,
         report_type="Functional Bloodwork Panel",
         results=lab_results,
-        key_findings=[f"Report date: {result.report_date}"],
+        key_findings=[f"Report date: {report_date}"],
         abnormal_markers=abnormal
     )
-    
     return LabData(
         reports=[lab_report],
         summary=f"Bloodwork analysis complete. {len(lab_results)} markers extracted, {len(abnormal)} abnormal."

@@ -34,110 +34,92 @@ def is_out_of_range(flag: str) -> bool:
     return False
 
 
-def generate_marker_summary(
+def generate_marker_details(
     marker_name: str,
     value: str,
     unit: str,
     reference_range: str,
     flag: str
-) -> str:
+) -> dict:
     """
-    Generate AI summary for out-of-range lab marker
-    
-    Args:
-        marker_name: Name of the lab marker
-        value: Test result value
-        unit: Unit of measurement
-        reference_range: Normal reference range
-        flag: Status flag (H/L/High/Low)
-        
-    Returns:
-        2-3 sentence summary explaining the marker
+    Generate structured AI details for a lab marker (all markers, not just out-of-range).
+    Returns dict with what_we_found, why_this_matters, symptoms.
     """
     try:
         api_key = os.getenv('OPENAI_API_KEY')
         if not api_key:
             logger.error("OPENAI_API_KEY not found")
-            return ""
-        
-        client = OpenAI(api_key=api_key)
-        
-        prompt = f"""You are a health practitioner explaining lab results to a client.
+            return {}
 
-Given this out-of-range lab marker:
+        client = OpenAI(api_key=api_key)
+
+        prompt = f"""You are a functional health practitioner writing a client protocol report.
+
+Lab marker:
 - Marker: {marker_name}
 - Value: {value} {unit}
 - Reference Range: {reference_range}
 - Status: {flag}
 
-Generate a 2-3 sentence summary that:
-1. States whether the value is above or below normal
-2. Briefly explains what this marker measures
-3. Mentions potential health implications
+Return ONLY a JSON object with exactly these 3 fields:
+{{
+  "what_we_found": "1 sentence: state the value, whether it is within/above/below range, and what this marker measures",
+  "why_this_matters": "1-2 sentences: explain the clinical significance of this result for this client",
+  "symptoms": "comma-separated list of symptoms this marker level can contribute to"
+}}
 
-Use supportive, non-alarmist language. Be concise and clear.
-Do not give medical advice or recommend specific treatments.
+Use clear, supportive, non-alarmist language. Do not diagnose."""
 
-Example format:
-"Your [marker name] level is [above/below] the normal reference range. This marker measures [what it measures]. [Status] levels may be associated with [potential implications]."
-"""
-        
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=150
+            max_tokens=200
         )
-        
-        summary = response.choices[0].message.content.strip()
-        logger.info(f"Generated summary for {marker_name}")
-        
-        return summary
-        
+
+        result = response.choices[0].message.content.strip()
+        if result.startswith('```json'):
+            result = result[7:]
+        if result.startswith('```'):
+            result = result[3:]
+        if result.endswith('```'):
+            result = result[:-3]
+
+        import json
+        data = json.loads(result.strip())
+        logger.info(f"Generated details for {marker_name}")
+        return data
+
     except Exception as e:
-        logger.error(f"Failed to generate summary for {marker_name}: {e}")
-        return ""
+        logger.error(f"Failed to generate details for {marker_name}: {e}")
+        return {}
 
 
 def analyze_lab_results(lab_results: List[LabResult]) -> List[LabResult]:
     """
-    Analyze lab results and add summaries for out-of-range markers
-    
-    Args:
-        lab_results: List of LabResult objects
-        
-    Returns:
-        List of LabResult objects with summaries added to out-of-range markers
+    Analyze ALL lab results and add structured details to each marker.
     """
     if not lab_results:
         return []
-    
+
     logger.info(f"Analyzing {len(lab_results)} lab results...")
-    
-    out_of_range_count = 0
-    
+
     for result in lab_results:
         if is_out_of_range(result.flag):
-            out_of_range_count += 1
             logger.info(f"Out-of-range marker detected: {result.test_name} = {result.value} (Flag: {result.flag})")
-            
-            # Generate summary for out-of-range marker
-            summary = generate_marker_summary(
-                marker_name=result.test_name,
-                value=result.value,
-                unit=result.unit,
-                reference_range=result.reference_range,
-                flag=result.flag
-            )
-            
-            result.summary = summary
-        else:
-            # Normal markers don't get summaries
-            result.summary = None
-    
-    logger.info(f"Found {out_of_range_count} out-of-range markers")
-    logger.info(f"Generated {out_of_range_count} summaries")
-    
+
+        details = generate_marker_details(
+            marker_name=result.test_name,
+            value=result.value,
+            unit=result.unit,
+            reference_range=result.reference_range,
+            flag=result.flag
+        )
+        result.what_we_found = details.get('what_we_found', '')
+        result.why_this_matters = details.get('why_this_matters', '')
+        result.symptoms = details.get('symptoms', '')
+
+    logger.info(f"Generated details for {len(lab_results)} markers")
     return lab_results
 
 
@@ -154,33 +136,31 @@ def get_out_of_range_markers(lab_results: List[LabResult]) -> List[LabResult]:
     return [result for result in lab_results if is_out_of_range(result.flag)]
 
 
-def format_lab_summary_for_protocol(lab_results: List[LabResult]) -> str:
+def build_lab_markers_for_protocol(lab_results: List[LabResult]) -> List[dict]:
     """
-    Format out-of-range markers with summaries for protocol inclusion
-    
-    Args:
-        lab_results: List of LabResult objects
-        
-    Returns:
-        Formatted string for protocol
+    Build structured list of ALL lab markers for protocol PDF 1 lab review.
+    Includes what_we_found, why_this_matters, symptoms per marker.
     """
-    out_of_range = get_out_of_range_markers(lab_results)
-    
-    if not out_of_range:
-        return "All lab markers are within normal reference ranges."
-    
-    summary_lines = []
-    summary_lines.append(f"**Out-of-Range Markers ({len(out_of_range)} found):**\n")
-    
-    for result in out_of_range:
-        summary_lines.append(f"**{result.test_name}**")
-        summary_lines.append(f"- Value: {result.value} {result.unit}")
-        summary_lines.append(f"- Reference Range: {result.reference_range}")
-        summary_lines.append(f"- Status: {result.flag}")
-        
-        if result.summary:
-            summary_lines.append(f"- Summary: {result.summary}")
-        
-        summary_lines.append("")  # Blank line between markers
-    
-    return "\n".join(summary_lines)
+    markers = []
+    for result in lab_results:
+        oor = is_out_of_range(result.flag)
+        flag_upper = (result.flag or '').upper().strip()
+        if flag_upper == 'H' or any(k in flag_upper for k in ['ABOVE', 'ELEVATED', 'HIGH END', 'HIGH']):
+            flag_normalized = 'H'
+        elif flag_upper == 'L' or any(k in flag_upper for k in ['BELOW', 'DECREASED', 'LOW END', 'LOW']):
+            flag_normalized = 'L'
+        else:
+            flag_normalized = 'N'
+        markers.append({
+            'test_name': result.test_name,
+            'value': result.value,
+            'unit': result.unit,
+            'reference_range': result.reference_range,
+            'flag': result.flag,
+            'flag_normalized': flag_normalized,
+            'is_out_of_range': oor,
+            'what_we_found': getattr(result, 'what_we_found', ''),
+            'why_this_matters': getattr(result, 'why_this_matters', ''),
+            'symptoms': getattr(result, 'symptoms', ''),
+        })
+    return markers

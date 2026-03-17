@@ -338,3 +338,88 @@ def get_token_summary():
 
 def print_token_summary():
     token_tracker.print_summary()
+
+
+def generate_what_to_expect(client_data, supplement_data):
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        return {}
+    client = OpenAI(api_key=api_key)
+    diagnoses = client_data.get('health_info', {}).get('official_diagnoses', '')
+    symptoms = client_data.get('health_info', {}).get('main_symptoms_ordered', [])
+    supplements = [s.get('name', '') for s in supplement_data.get('active_supplements', [])]
+
+    prompt = f"""You are a functional health practitioner writing a client protocol.
+
+Client:
+- Diagnoses: {diagnoses}
+- Top Symptoms: {', '.join(symptoms[:5])}
+- Active Supplements: {', '.join(supplements)}
+
+Generate realistic timeline expectations for this client's protocol.
+
+Return ONLY a JSON object:
+{{
+  "early_changes": "What the client can expect in weeks 1-4 (energy, digestion, sleep, mood)",
+  "mid_changes": "What the client can expect in weeks 4-8 (hormonal shifts, cycle changes, weight)",
+  "long_term_changes": "What the client can expect at 8-12+ weeks (sustained improvements)",
+  "progress_criteria": "2-3 measurable signs the client is ready to progress to the next phase",
+  "next_phase_focus": "Brief description of what the next phase would focus on"
+}}"""
+
+    try:
+        response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
+        token_tracker.track("what_to_expect", response)
+        result = response.choices[0].message.content.strip()
+        if result.startswith('```json'):
+            result = result[7:]
+        if result.endswith('```'):
+            result = result[:-3]
+        return json.loads(result.strip())
+    except Exception as e:
+        print(f"Error generating what to expect: {e}")
+        return {}
+
+
+def generate_goals_action_plan(client_data, nutrition_data, lifestyle_data, supplement_data):
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        return []
+    client = OpenAI(api_key=api_key)
+    short_goals = client_data.get('health_info', {}).get('short_term_goals', '')
+    long_goals = client_data.get('health_info', {}).get('long_term_goals', '')
+    supplements = [s.get('name', '') for s in supplement_data.get('active_supplements', [])]
+    core_habits = nutrition_data.get('core_habits', [])
+    stress_support = lifestyle_data.get('stress_support', [])
+
+    prompt = f"""You are a functional health practitioner writing a client protocol.
+
+Client Goals:
+- Short-term: {short_goals}
+- Long-term: {long_goals}
+
+Protocol Summary:
+- Core Nutrition Habits: {', '.join(core_habits[:3])}
+- Stress Support: {', '.join(stress_support[:2])}
+- Active Supplements: {', '.join(supplements)}
+
+Create a Goals Action Plan table with 3-5 rows.
+Each row maps one specific client goal to a concrete summary of the actions in this protocol that address it.
+
+Return ONLY a JSON array:
+[
+  {{"goal": "specific goal", "action": "concrete summary of protocol actions addressing this goal"}}
+]"""
+
+    try:
+        response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
+        token_tracker.track("goals_action_plan", response)
+        result = response.choices[0].message.content.strip()
+        if result.startswith('```json'):
+            result = result[7:]
+        if result.endswith('```'):
+            result = result[:-3]
+        return json.loads(result.strip())
+    except Exception as e:
+        print(f"Error generating goals action plan: {e}")
+        return []
