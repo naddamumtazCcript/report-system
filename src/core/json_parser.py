@@ -76,6 +76,16 @@ def map_questionnaire_to_intake_schema(questionnaire: Dict[str, Any]) -> Dict[st
     # Handle flat structure (direct fields) or nested structure
     if not answers:
         answers = questionnaire
+
+    # If answers is already in INTAKE_SCHEMA format (has personal_info sub-dict), use it directly
+    if "personal_info" in answers:
+        logger.info("Detected INTAKE_SCHEMA format — using directly")
+        pi = answers.get("personal_info", {})
+        if not answers.get("client_name"):
+            answers["client_name"] = f"{pi.get('legal_first_name', '')} {pi.get('last_name', '')}".strip() or "Client"
+        if "main_symptoms" not in answers:
+            answers["main_symptoms"] = answers.get("health_info", {}).get("main_symptoms_ordered", [])
+        return answers
     
     # Parse nested JSON strings if they exist
     food_log_raw = answers.get("threeDayFoodLog", "")

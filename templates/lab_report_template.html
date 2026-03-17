@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lab Interpretation Report - {{ client_name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: letter; margin: 0; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1a2332; line-height: 1.6; background: #fff; }
+
+        /* COVER PAGE */
+        .cover-page {
+            height: 100vh;
+            background: linear-gradient(135deg, #1a2332 0%, #2c5f7c 100%);
+            padding: 60px;
+            color: white;
+            page-break-after: always;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .cover-page::before {
+            content: '';
+            position: absolute;
+            bottom: -100px; left: -100px;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(44,95,124,0.4) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .cover-top { position: relative; z-index: 1; }
+        .cover-brand { font-size: 13px; font-weight: bold; letter-spacing: 2px; color: #a8c8d8; margin-bottom: 40px; }
+        .cover-title { font-size: 38px; font-weight: bold; line-height: 1.3; margin-bottom: 20px; }
+        .cover-subtitle { font-size: 15px; color: #c8dde8; line-height: 1.7; max-width: 600px; margin-bottom: 50px; }
+        .cover-how-to { margin-bottom: 40px; }
+        .cover-how-to h3 { font-size: 13px; font-weight: bold; letter-spacing: 1px; color: #a8c8d8; margin-bottom: 20px; }
+        .cover-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .cover-section-box { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 20px; }
+        .cover-section-box h4 { font-size: 13px; font-weight: bold; color: #e8f4f8; margin-bottom: 10px; }
+        .cover-section-box p { font-size: 13px; color: #c8dde8; line-height: 1.6; }
+        .patient-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 30px;
+            position: relative; z-index: 1;
+        }
+        .patient-card-grid { display: flex; gap: 40px; }
+        .patient-col { flex: 1; }
+        .patient-label { font-size: 11px; font-weight: bold; letter-spacing: 0.5px; color: #888; margin-bottom: 6px; }
+        .patient-value { font-size: 15px; color: #1a2332; font-weight: 600; }
+        .cover-disclaimer {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 20px 25px;
+            position: relative; z-index: 1;
+        }
+        .cover-disclaimer p { font-size: 12px; color: #c8dde8; line-height: 1.6; }
+        .cover-disclaimer strong { color: #e8f4f8; }
+
+        /* CONTENT PAGES */
+        .content-page {
+            background: #f4f5f7;
+            min-height: 100vh;
+            padding-bottom: 70px;
+            page-break-after: always;
+        }
+        .section-header {
+            background: linear-gradient(135deg, #1a2332 0%, #2c5f7c 100%);
+            padding: 30px 50px;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 35px;
+        }
+        .section-header-label { font-size: 11px; font-weight: bold; letter-spacing: 1.5px; color: #a8c8d8; margin-bottom: 8px; }
+        .section-header-title { font-size: 28px; font-weight: bold; color: white; margin-bottom: 6px; }
+        .section-header-sub { font-size: 13px; color: #c8dde8; }
+        .content-container { padding: 0 50px; }
+        .white-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px 35px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            font-size: 13px; font-weight: bold; letter-spacing: 0.8px;
+            text-transform: uppercase; color: #1a2332;
+            margin-bottom: 15px; padding-bottom: 10px;
+            border-bottom: 2px solid #e8edf2;
+        }
+        .body-text { font-size: 14px; line-height: 1.75; color: #333; margin-bottom: 14px; }
+        .body-text:last-child { margin-bottom: 0; }
+
+        /* OVERVIEW PATTERN BOXES */
+        .pattern-box {
+            background: #f0f6fa;
+            border-left: 4px solid #2c5f7c;
+            border-radius: 0 8px 8px 0;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+        }
+        .pattern-number { font-size: 11px; font-weight: bold; letter-spacing: 1px; color: #2c5f7c; margin-bottom: 6px; }
+        .pattern-title { font-size: 16px; font-weight: bold; color: #1a2332; margin-bottom: 12px; }
+
+        /* FINDINGS */
+        .finding-block {
+            border-left: 4px solid #c0392b;
+            padding-left: 20px;
+            margin-bottom: 30px;
+        }
+        .finding-block.normal { border-left-color: #27ae60; }
+        .finding-title { font-size: 15px; font-weight: bold; color: #1a2332; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .finding-explanation { font-size: 14px; line-height: 1.75; color: #333; margin-bottom: 12px; }
+        .finding-bullets { margin-left: 5px; margin-bottom: 12px; }
+        .finding-bullets li { font-size: 14px; line-height: 1.7; color: #444; margin-bottom: 6px; list-style: none; padding-left: 15px; position: relative; }
+        .finding-bullets li::before { content: '•'; position: absolute; left: 0; color: #2c5f7c; font-weight: bold; }
+        .finding-recommendation { font-size: 13px; color: #2c5f7c; font-style: italic; background: #f0f6fa; padding: 10px 15px; border-radius: 6px; }
+
+        /* INSIGHTS & STRATEGY */
+        .insight-block { margin-bottom: 30px; }
+        .insight-title { font-size: 14px; font-weight: bold; color: #1a2332; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e8edf2; }
+
+        /* PAGE NUMBER */
+        .page-num { position: absolute; bottom: 20px; right: 50px; font-size: 12px; color: #999; }
+
+        /* FOOTER */
+        .page-footer {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: 45px;
+            background: #1a2332;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 50px; color: white; font-size: 12px;
+        }
+        .footer-brand { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover-page">
+    <div class="cover-top">
+        <div class="cover-brand">BE BALANCED CO.</div>
+        <div class="cover-title">Welcome To Your Patient's<br>Personalized Hormone Story</div>
+        <div class="cover-subtitle">
+            Our intent is to provide insights and education to help you, the provider, better understand and identify
+            the unique hormonal story that can be unraveled through evaluation of functional hormone metabolite testing.
+        </div>
+
+        <div class="cover-how-to">
+            <h3>HOW TO READ THIS REPORT</h3>
+            <div class="cover-sections">
+                <div class="cover-section-box">
+                    <h4>Overview &amp; Findings</h4>
+                    <p>A review of the unique hormone and adrenal patterns that emerged through analysis of urinary sex hormone metabolites and adrenal metabolites.</p>
+                </div>
+                <div class="cover-section-box">
+                    <h4>Hormone &amp; Adrenal Insights</h4>
+                    <p>Key hormone relationships broken down to provide education regarding the patient's unique imbalances with high-level features.</p>
+                </div>
+                <div class="cover-section-box">
+                    <h4>Strategy &amp; Analysis</h4>
+                    <p>An in-depth understanding of what to focus on for your patient's hormone case with detailed clinical recommendations.</p>
+                </div>
+                <div class="cover-section-box">
+                    <h4>Report Type</h4>
+                    <p>{{ report_type }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="patient-card" style="margin-bottom: 20px;">
+            <div class="patient-card-grid">
+                <div class="patient-col">
+                    <div class="patient-label">PREPARED FOR</div>
+                    <div class="patient-value">{{ client_name }}</div>
+                </div>
+                <div class="patient-col">
+                    <div class="patient-label">REQUESTED BY</div>
+                    <div class="patient-value">Be Balanced Co.</div>
+                </div>
+                <div class="patient-col">
+                    <div class="patient-label">LABS COLLECTED</div>
+                    <div class="patient-value">{{ report_date or 'On File' }}</div>
+                </div>
+                <div class="patient-col">
+                    <div class="patient-label">AGE / GENDER</div>
+                    <div class="patient-value">{{ client_age }} {{ client_gender }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cover-disclaimer">
+            <p><strong>DISCLAIMER</strong><br>{{ disclaimer }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- OVERVIEW PAGE -->
+<div class="content-page">
+    <div class="section-header">
+        <div class="section-header-label">SECTION 1</div>
+        <div class="section-header-title">Overview</div>
+        <div class="section-header-sub">A summary review of the important aspects of your patient's report</div>
+    </div>
+    <div class="content-container">
+        {% if overview.sex_hormone_pattern %}
+        <div class="white-card">
+            <div class="card-title">SEX HORMONE PATTERN</div>
+            <div class="pattern-box">
+                <div class="pattern-number">PATTERN {{ overview.sex_hormone_pattern.pattern_number }}</div>
+            </div>
+            {% for para in overview.sex_hormone_pattern.summary.split('\n') %}
+            {% if para.strip() %}
+            <div class="body-text">{{ para.strip() }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if overview.adrenal_pattern %}
+        <div class="white-card">
+            <div class="card-title">ADRENAL PATTERN</div>
+            <div class="pattern-box">
+                <div class="pattern-number">PATTERN {{ overview.adrenal_pattern.pattern_number }}</div>
+            </div>
+            {% for para in overview.adrenal_pattern.summary.split('\n') %}
+            {% if para.strip() %}
+            <div class="body-text">{{ para.strip() }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- FINDINGS PAGE -->
+{% if findings %}
+<div class="content-page">
+    <div class="section-header">
+        <div class="section-header-label">SECTION 2</div>
+        <div class="section-header-title">Findings</div>
+        <div class="section-header-sub">A summary of the important aspects of your patient's report that you do not want to miss</div>
+    </div>
+    <div class="content-container">
+        <div class="white-card">
+            {% for finding in findings %}
+            <div class="finding-block">
+                <div class="finding-title">{{ finding.title }}</div>
+                <div class="finding-explanation">{{ finding.explanation }}</div>
+                {% if finding.bullet_points %}
+                <ul class="finding-bullets">
+                    {% for bp in finding.bullet_points %}
+                    <li>{{ bp }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% if finding.recommendation %}
+                <div class="finding-recommendation">{{ finding.recommendation }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- HORMONAL INSIGHTS PAGES -->
+{% if hormonal_insights %}
+{% for insight in hormonal_insights %}
+<div class="content-page">
+    <div class="section-header">
+        <div class="section-header-label">HORMONAL INSIGHTS</div>
+        <div class="section-header-title">{{ insight.section_title }}</div>
+        <div class="section-header-sub">A high-level review of your patient's hormone interactions</div>
+    </div>
+    <div class="content-container">
+        <div class="white-card">
+            {% for para in insight.content.split('\n') %}
+            {% if para.strip() %}
+            <div class="body-text">{{ para.strip() }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- ADRENAL INSIGHTS PAGES -->
+{% if adrenal_insights %}
+{% for insight in adrenal_insights %}
+<div class="content-page">
+    <div class="section-header">
+        <div class="section-header-label">ADRENAL INSIGHTS</div>
+        <div class="section-header-title">{{ insight.section_title }}</div>
+        <div class="section-header-sub">A high-level review of your patient's adrenal pattern</div>
+    </div>
+    <div class="content-container">
+        <div class="white-card">
+            {% for para in insight.content.split('\n') %}
+            {% if para.strip() %}
+            <div class="body-text">{{ para.strip() }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- STRATEGY & ANALYSIS PAGES -->
+{% if strategy_analysis %}
+{% for section in strategy_analysis %}
+<div class="content-page">
+    <div class="section-header">
+        <div class="section-header-label">STRATEGY &amp; ANALYSIS</div>
+        <div class="section-header-title">{{ section.section_title }}</div>
+        <div class="section-header-sub">A deep-dive review of your patient's hormone, adrenal and significant findings</div>
+    </div>
+    <div class="content-container">
+        <div class="white-card">
+            {% for para in section.content.split('\n') %}
+            {% if para.strip() %}
+            <div class="body-text">{{ para.strip() }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="page-footer">
+    <div class="footer-brand">Be Balanced Co.</div>
+    <div>Lab Interpretation Report — {{ client_name }}</div>
+</div>
+
+</body>
+</html>
