@@ -176,3 +176,108 @@ def parse_questionnaire_json(questionnaire_json: Dict[str, Any]) -> Dict[str, An
     except Exception as e:
         logger.error(f"Failed to parse questionnaire JSON: {e}")
         raise DataMappingError(f"Questionnaire parsing failed: {e}")
+
+
+def parse_questionnaire_pdf(pdf_path: str) -> Dict[str, Any]:
+    """
+    Extract questionnaire data from a PDF using Gemini and return INTAKE_SCHEMA format.
+    """
+    import os
+    from google import genai
+    from google.genai import types
+    from pydantic import BaseModel
+    from typing import Optional as Opt
+
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        raise DataMappingError("GEMINI_API_KEY not found")
+
+    # Pydantic schema for Gemini structured extraction
+    class PersonalInfo(BaseModel):
+        legal_first_name: str = ""
+        last_name: str = ""
+        date_of_birth: str = ""
+        gender: str = ""
+        current_weight: str = ""
+        height: str = ""
+        occupation: str = ""
+        email: str = ""
+        mobile_phone: str = ""
+
+    class HealthInfo(BaseModel):
+        official_diagnoses: str = ""
+        main_symptoms_ordered: list = []
+        short_term_goals: str = ""
+        long_term_goals: str = ""
+        current_supplements: str = ""
+        prescription_medications: str = ""
+
+    class NutritionPreferences(BaseModel):
+        foods_to_avoid: str = ""
+        nutrition_struggles: str = ""
+
+    class Fitness(BaseModel):
+        weekly_workout_description: str = ""
+        workout_limitations: str = ""
+
+    class Lifestyle(BaseModel):
+        energy_levels: str = ""
+        sleep_quality: str = ""
+        alcohol_frequency: str = ""
+
+    class DigestiveHealth(BaseModel):
+        digestive_symptoms: str = ""
+        bowel_movement_frequency: str = ""
+
+    class QuestionnaireExtraction(BaseModel):
+        personal_info: PersonalInfo
+        health_info: HealthInfo
+        nutrition_preferences: NutritionPreferences
+        fitness: Fitness
+        lifestyle: Lifestyle
+        digestive_health: DigestiveHealth
+
+    try:
+        client = genai.Client(api_key=api_key)
+        with open(pdf_path, 'rb') as f:
+            uploaded_file = client.files.upload(file=f, config={'mime_type': 'application/pdf'})
+
+        prompt = """Extract all client intake questionnaire data from this PDF.
+        Map every field you find to the appropriate section.
+        Leave fields empty string if not found. Do not hallucinate data."""
+
+        response = client.models.generate_content(
+            model="models/gemini-2.5-flash",
+            contents=[uploaded_file, prompt],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=QuestionnaireExtraction,
+                temperature=0.0
+            )
+        )
+
+        extracted = response.parsed
+        pi = extracted.personal_info
+        client_name = f"{pi.legal_first_name} {pi.last_name}".strip() or "Client"
+
+        intake_data = {
+            "client_name": client_name,
+            "personal_info": pi.model_dump(),
+            "health_info": extracted.health_info.model_dump(),
+            "nutrition_preferences": extracted.nutrition_preferences.model_dump(),
+            "fitness": extracted.fitness.model_dump(),
+            "lifestyle": extracted.lifestyle.model_dump(),
+            "digestive_health": extracted.digestive_health.model_dump(),
+            "diet_history": {},
+            "medical_history": {},
+            "supplement_preferences": {},
+            "goals": {},
+            "main_symptoms": extracted.health_info.main_symptoms_ordered
+        }
+
+        logger.info(f"Successfully extracted questionnaire from PDF for {client_name}")
+        return intake_data
+
+    except Exception as e:
+        logger.error(f"Failed to parse questionnaire PDF: {e}")
+        raise DataMappingError(f"Questionnaire PDF parsing failed: {e}")

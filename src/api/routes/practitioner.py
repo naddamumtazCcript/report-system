@@ -1,7 +1,7 @@
 """
 Practitioner Agent Endpoint - Protocol Generation with DB
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import Response, RedirectResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from db.database import get_db_connection
 from core.schema import LabResult, LabReport, LabData
-from core.json_parser import parse_questionnaire_json
+from core.json_parser import parse_questionnaire_json, parse_questionnaire_pdf
 from ai.lab_analyzer import analyze_lab_results, build_lab_markers_for_protocol
 from ai.lab_report_generator import generate_lab_interpretation_json
 from ai.knowledge_base import (
@@ -196,6 +196,103 @@ async def generate_protocol(body: GenerateProtocolRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/practitioner/generate-protocol-from-pdf")
+async def generate_protocol_from_pdf(
+    user_id: int = Form(...),
+    client_id: int = Form(...),
+    template_type: str = Form("standard"),
+    questionnaire_pdf: UploadFile = File(...),
+    lab_report_pdfs: Optional[List[UploadFile]] = File(None)
+):
+    """
+    Generate protocol from PDF questionnaire + optional lab report PDFs.
+    Questionnaire PDF is parsed via Gemini into INTAKE_SCHEMA format.
+    Lab PDFs are extracted via existing gemini_lab_extractor pipeline.
+    """
+    try:
+        from ai.gemini_lab_extractor import analyze_lab_with_gemini
+        from api.config import UPLOAD_DIR
+
+        logger.info(f"[generate_protocol_from_pdf] user={user_id} client={client_id}")
+
+        # Save + parse questionnaire PDF
+        q_bytes = await questionnaire_pdf.read()
+        q_path = UPLOAD_DIR / f"{client_id}_questionnaire_{questionnaire_pdf.filename}"
+        q_path.write_bytes(q_bytes)
+
+        intake_data = parse_questionnaire_pdf(str(q_path))
+        pi = intake_data.get('personal_info', {})
+        client_name = f"{pi.get('legal_first_name', '')} {pi.get('last_name', '')}".strip() or 'Client'
+
+        # Process lab PDFs if provided
+        lab_results = []
+        report_type = 'Lab Report'
+        report_date = ''
+
+        if lab_report_pdfs:
+            valid_labs = [f for f in lab_report_pdfs if f and f.filename]
+            if len(valid_labs) > 3:
+                raise HTTPException(status_code=400, detail="Maximum 3 lab report PDFs allowed")
+            for lab_file in valid_labs:
+                lab_bytes = await lab_file.read()
+                lab_path = UPLOAD_DIR / f"{client_id}_lab_{lab_file.filename}"
+                lab_path.write_bytes(lab_bytes)
+                lab_data = analyze_lab_with_gemini(str(lab_path))
+                if lab_data.reports:
+                    report_type = lab_data.reports[0].report_type
+                    report_date = lab_data.reports[0].report_date or ''
+                lab_results.extend(r for report in lab_data.reports for r in report.results)
+
+        # Analyze lab results
+        analyzed = analyze_lab_results(lab_results) if lab_results else []
+        lab_markers = build_lab_markers_for_protocol(analyzed)
+
+        # Build protocol JSON
+        protocol_json = _build_protocol_json(intake_data, lab_markers, client_name)
+
+        # Build lab report JSON
+        lab_report_json = None
+        if analyzed:
+            lab_report_json = generate_lab_interpretation_json(
+                lab_results=analyzed,
+                report_type=report_type,
+                client_name=client_name,
+                client_age=str(pi.get('age', '')),
+                client_gender=pi.get('gender', 'Female'),
+                report_date=report_date or datetime.now().strftime('%B %d, %Y')
+            )
+
+        # Save to DB
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO "Protocol" (protocol, status, "clientId", "createdById")
+            VALUES (%s, 'pending_approval', %s, %s)
+            RETURNING id
+        """, (json.dumps({
+            'protocol_json': protocol_json,
+            'lab_report_json': lab_report_json,
+            'template_type': template_type
+        }), client_id, user_id))
+        protocol_id = cur.fetchone()['id']
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        logger.info(f"[generate_protocol_from_pdf] Saved protocol id={protocol_id}")
+        return {
+            "protocol_id": protocol_id,
+            "status": "pending_approval",
+            "has_lab_report": lab_report_json is not None
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[generate_protocol_from_pdf] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/practitioner/edit-protocol/{protocol_id}")
 async def edit_protocol(protocol_id: int, body: Dict[str, Any]):
     """Edit a draft protocol's protocol_json"""
@@ -257,6 +354,8 @@ async def submit_for_approval(protocol_id: int):
 @router.post("/practitioner/approve-protocol/{protocol_id}")
 async def approve_protocol(protocol_id: int):
     """Admin approves protocol: generates PDFs, uploads to Cloudinary (pending_approval -> final)"""
+    import asyncio
+    from functools import partial
     try:
         from core.html_pdf_generator import generate_protocol_pdf, generate_lab_report_pdf
 
@@ -276,10 +375,12 @@ async def approve_protocol(protocol_id: int):
         client_id = row['clientId']
         client_name = protocol_json.get('client_name', 'client')
 
-        # Generate + upload PDF 1
+        loop = asyncio.get_event_loop()
+
+        # Generate + upload PDF 1 in thread
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
             protocol_pdf_path = f.name
-        generate_protocol_pdf(protocol_json, protocol_pdf_path)
+        await loop.run_in_executor(None, partial(generate_protocol_pdf, protocol_json, protocol_pdf_path))
         protocol_cloudinary = upload_pdf_bytes(Path(protocol_pdf_path).read_bytes(), f"protocol_{protocol_id}")
 
         # Generate + upload PDF 2 if present
@@ -287,7 +388,7 @@ async def approve_protocol(protocol_id: int):
         if lab_report_json:
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
                 lab_pdf_path = f.name
-            generate_lab_report_pdf(lab_report_json, lab_pdf_path)
+            await loop.run_in_executor(None, partial(generate_lab_report_pdf, lab_report_json, lab_pdf_path))
             lab_cloudinary = upload_pdf_bytes(Path(lab_pdf_path).read_bytes(), f"lab_report_{protocol_id}")
             lab_report_url = lab_cloudinary.get('url')
 
@@ -303,7 +404,7 @@ async def approve_protocol(protocol_id: int):
             from ai.client_chat import ClientChat
             from api.config import CLIENT_PROTOCOLS_DIR
             context = ClientContext(str(client_id), CLIENT_PROTOCOLS_DIR)
-            context.save_protocol(json.dumps(protocol_json), {
+            context.save_protocol(protocol_json, {
                 'name': client_name, 'client_id': client_id, 'protocol_id': protocol_id
             })
             ClientChat(str(client_id), CLIENT_PROTOCOLS_DIR).initialize()
@@ -415,6 +516,8 @@ async def download_pdf(protocol_id: int):
 @router.get("/practitioner/protocol/{protocol_id}/preview-pdf")
 async def preview_pdf(protocol_id: int):
     """Generate and stream a PDF preview (draft or final)"""
+    import asyncio
+    from functools import partial
     try:
         from core.html_pdf_generator import generate_protocol_pdf
 
@@ -434,7 +537,8 @@ async def preview_pdf(protocol_id: int):
 
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
             tmp_path = f.name
-        generate_protocol_pdf(protocol_json, tmp_path)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, partial(generate_protocol_pdf, protocol_json, tmp_path))
         pdf_bytes = Path(tmp_path).read_bytes()
 
         return Response(

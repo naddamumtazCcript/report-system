@@ -25,6 +25,7 @@ class LabReport:
     results: List[LabResult]
     key_findings: List[str]
     abnormal_markers: List[str]
+    structured_results: Optional[List[dict]] = None  # category/type/title format for DUTCH & GI-MAP
 
 @dataclass
 class LabData:

@@ -79,54 +79,55 @@ def extract_dutch_test(file_path: str):
         print(f"[DEBUG] Gemini response received successfully")
         parsed_data = response.parsed
         
-        # Convert to LabResult objects and analyze
+        # Section map: (category, type) -> biomarker list
+        sections = [
+            ("SEX HORMONES", "Progesterone Metabolites", parsed_data.sex_hormones.progesterone_metabolites),
+            ("SEX HORMONES", "Estrogens and Metabolites", parsed_data.sex_hormones.estrogens_and_metabolites),
+            ("SEX HORMONES", "Metabolite Ratios", parsed_data.sex_hormones.metabolite_ratios),
+            ("SEX HORMONES", "Androgens and Metabolites", parsed_data.sex_hormones.androgens_and_metabolites),
+            ("ADRENAL", "Daily Free Cortisol and Cortisone", parsed_data.adrenal_hormones.daily_free_cortisol_cortisone),
+            ("ADRENAL", "Creatinine", parsed_data.adrenal_hormones.creatinine),
+            ("ADRENAL", "Cortisol Metabolites and DHEA-S", parsed_data.adrenal_hormones.cortisol_metabolites_dheas),
+            ("ORGANIC ACIDS", "Nutritional Markers", parsed_data.organic_acids.nutritional_markers),
+            ("ORGANIC ACIDS", "Neuro-Related Markers", parsed_data.organic_acids.neuro_related_markers),
+            ("ORGANIC ACIDS", "Additional Markers", parsed_data.organic_acids.additional_markers),
+        ]
+
         lab_results = []
-        
-        # Process all biomarkers from different sections
-        all_biomarkers = []
-        
-        # Sex hormones
-        all_biomarkers.extend(parsed_data.sex_hormones.progesterone_metabolites)
-        all_biomarkers.extend(parsed_data.sex_hormones.estrogens_and_metabolites)
-        all_biomarkers.extend(parsed_data.sex_hormones.metabolite_ratios)
-        all_biomarkers.extend(parsed_data.sex_hormones.androgens_and_metabolites)
-        
-        # Adrenal hormones
-        all_biomarkers.extend(parsed_data.adrenal_hormones.daily_free_cortisol_cortisone)
-        all_biomarkers.extend(parsed_data.adrenal_hormones.creatinine)
-        all_biomarkers.extend(parsed_data.adrenal_hormones.cortisol_metabolites_dheas)
-        
-        # Organic acids
-        all_biomarkers.extend(parsed_data.organic_acids.nutritional_markers)
-        all_biomarkers.extend(parsed_data.organic_acids.neuro_related_markers)
-        all_biomarkers.extend(parsed_data.organic_acids.additional_markers)
-        
-        # Convert to LabResult format
-        for biomarker in all_biomarkers:
-            # Determine flag from range_flag
-            flag = "Normal"
-            if biomarker.range_flag:
-                range_flag_lower = biomarker.range_flag.lower()
-                if "above" in range_flag_lower or "high" in range_flag_lower:
-                    flag = "H"
-                elif "below" in range_flag_lower or "low" in range_flag_lower:
-                    flag = "L"
-            
-            lab_result = LabResult(
-                test_name=biomarker.marker_name,
-                value=biomarker.result_value,
-                unit=biomarker.units,
-                reference_range=biomarker.normal_range,
-                flag=flag,
-                summary=None
-            )
-            lab_results.append(lab_result)
-        
-        # Analyze results and add summaries for out-of-range markers
+        structured_results = []
+
+        for category, section_type, biomarkers in sections:
+            for biomarker in biomarkers:
+                flag = "Normal"
+                if biomarker.range_flag:
+                    range_flag_lower = biomarker.range_flag.lower()
+                    if "above" in range_flag_lower or "high" in range_flag_lower:
+                        flag = "H"
+                    elif "below" in range_flag_lower or "low" in range_flag_lower:
+                        flag = "L"
+
+                lab_results.append(LabResult(
+                    test_name=biomarker.marker_name,
+                    value=biomarker.result_value,
+                    unit=biomarker.units,
+                    reference_range=biomarker.normal_range,
+                    flag=flag,
+                    summary=None
+                ))
+                structured_results.append({
+                    "category": category,
+                    "type": section_type,
+                    "title": biomarker.marker_name,
+                    "result": biomarker.result_value,
+                    "unit": biomarker.units,
+                    "reference": biomarker.normal_range,
+                    "flag": biomarker.range_flag or "Normal"
+                })
+
         print("[DEBUG] Analyzing DUTCH results for out-of-range markers...")
         lab_results = analyze_lab_results(lab_results)
-        
-        return parsed_data, lab_results
+
+        return parsed_data, lab_results, structured_results
         
     except Exception as e:
         print(f"[DEBUG] Gemini API error: {type(e).__name__}")

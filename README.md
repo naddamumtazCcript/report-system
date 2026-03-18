@@ -8,19 +8,22 @@ Converts client-filled questionnaires and lab reports into two personalized docu
 - **PDF 1 — Full Protocol**: Nutrition, lifestyle, supplement plan
 - **PDF 2 — Lab Interpretation Report**: EndoAxis-style narrative report (only when labs are attached)
 
-Both documents are generated as JSON + PDF, stored in PostgreSQL and Cloudinary, and require admin approval before delivery.
+Both documents are generated as JSON + PDF, stored in PostgreSQL and Cloudinary, and require admin approval before delivery. Approved protocols are automatically indexed in ChromaDB per client, enabling RAG-based client chat.
 
 ## Features
 
-- **2-PDF Generation** - Protocol PDF + Lab Interpretation Report per run
-- **AI Data Mapping** - GPT-4o-mini maps questionnaire JSON to structured intake data
-- **Lab Extraction** - Gemini 2.5 Flash extracts structured markers from DUTCH, GI-MAP, Bloodwork PDFs
-- **Batch Lab Analysis** - All markers analyzed in a single GPT call (what we found, why it matters, symptoms)
-- **Smart Recommendations** - GPT generates nutrition, supplement, lifestyle, what-to-expect, and goals plans
-- **Admin Approval Flow** - Protocols require admin approval before PDFs are generated and delivered
-- **Cloud Storage** - PDFs stored on Cloudinary CDN
-- **PostgreSQL Storage** - Protocol JSON saved to DB with full lifecycle tracking
-- **Error Handling** - Production-ready error handling and logging
+- **2-PDF Generation** — Protocol PDF + Lab Interpretation Report per run
+- **AI Data Mapping** — GPT-4o-mini maps questionnaire JSON to structured intake data
+- **PDF Questionnaire Parsing** — Gemini extracts structured intake data from questionnaire PDFs
+- **Lab Extraction** — Gemini 2.5 Flash extracts structured markers from DUTCH, GI-MAP, Bloodwork PDFs
+- **Batch Lab Analysis** — All markers analyzed in a single GPT call (what we found, why it matters, symptoms)
+- **Smart Recommendations** — GPT generates nutrition, supplement, lifestyle, what-to-expect, and goals plans
+- **Admin Approval Flow** — Protocols require admin approval before PDFs are generated and delivered
+- **Dynamic Knowledge Libraries** — Admin uploads `.md` knowledge libraries to ChromaDB; RAG queries replace static files
+- **Client RAG Chat** — Approved protocols indexed in ChromaDB per client; clients chat with their own protocol
+- **Cloud Storage** — PDFs stored on Cloudinary CDN
+- **PostgreSQL Storage** — Protocol JSON saved to DB with full lifecycle tracking
+- **Error Handling** — Production-ready error handling and logging
 
 ## Project Structure
 
@@ -29,20 +32,51 @@ report-system/
 ├── src/
 │   ├── api/
 │   │   ├── routes/
-│   │   │   ├── practitioner.py    # Protocol generation & approval endpoints
-│   │   │   ├── lab_extraction.py  # Standalone lab extraction endpoint
-│   │   │   ├── client.py          # Client chat endpoints
-│   │   │   └── ...
-│   │   └── app.py                 # FastAPI app entry point
-│   ├── core/                      # Data mapping, HTML/PDF generation
-│   ├── ai/                        # Lab analyzer, knowledge base, lab report generator
-│   └── utils/                     # Error handling, logging, Cloudinary helper
+│   │   │   ├── practitioner.py      # Protocol generation & approval endpoints
+│   │   │   ├── lab_extraction.py    # Standalone lab extraction endpoint
+│   │   │   ├── client.py            # Client chat endpoints
+│   │   │   ├── library.py           # Knowledge library management endpoints
+│   │   │   ├── generate.py          # Legacy generate endpoints
+│   │   │   ├── upload.py            # File upload endpoints
+│   │   │   └── pdf_to_json.py       # PDF to JSON converter
+│   │   ├── app.py                   # FastAPI app entry point
+│   │   └── config.py                # Path and directory config
+│   ├── ai/
+│   │   ├── gemini_extractors/
+│   │   │   ├── dutch_extraction.py  # DUTCH Complete extractor
+│   │   │   ├── gi_map.py            # GI-MAP extractor
+│   │   │   └── functional_bloodwork.py  # Bloodwork extractor
+│   │   ├── gemini_lab_extractor.py  # Routes PDFs to correct extractor
+│   │   ├── lab_analyzer.py          # Batch GPT marker analysis
+│   │   ├── lab_report_generator.py  # GPT lab interpretation JSON
+│   │   ├── knowledge_base.py        # GPT protocol recommendations
+│   │   ├── library_vectordb.py      # ChromaDB CRUD for knowledge libraries
+│   │   ├── library_loader.py        # Queries ChromaDB, falls back to static files
+│   │   ├── client_chat.py           # RAG chat engine with guardrails
+│   │   ├── client_context.py        # Saves/loads client protocol JSON
+│   │   └── client_vectordb.py       # ChromaDB CRUD for client protocols
+│   ├── core/
+│   │   ├── json_parser.py           # Questionnaire JSON + PDF → intake_data
+│   │   ├── html_pdf_generator.py    # Jinja2 HTML → PDF via Playwright
+│   │   ├── schema.py                # LabResult, LabData, LabReport dataclasses
+│   │   └── data_mapper.py           # Field mapping utilities
+│   ├── db/
+│   │   └── database.py              # psycopg2 connection helper
+│   └── utils/
+│       ├── cloudinary_helper.py     # PDF upload to Cloudinary
+│       └── error_handler.py         # Logging setup
 ├── templates/
-│   ├── ProtocolTemplate.md        # Protocol structure reference
-│   ├── template.html              # Protocol PDF HTML template
-│   └── lab_report_template.html   # Lab interpretation PDF HTML template
-├── knowledge_base/                # Practitioner knowledge libraries
-└── output/                        # Generated JSONs and PDFs
+│   ├── template.html                # Protocol PDF HTML template
+│   └── lab_report_template.html     # Lab interpretation PDF HTML template
+├── knowledge_base/                  # Static fallback knowledge libraries (.md)
+├── vectordb/
+│   ├── library_db/                  # ChromaDB: knowledge_library collection
+│   └── client_db/                   # ChromaDB: client_{id} collections
+├── data/
+│   ├── client_protocols/            # Per-client protocol.json + metadata.json
+│   ├── uploads/                     # Temp uploaded files
+│   └── output/                      # Generated JSONs and PDFs
+└── output/                          # Legacy output directory
 ```
 
 ## Setup
@@ -78,20 +112,33 @@ python3 -m uvicorn api.app:app --reload
 ### Protocol Status Flow
 
 ```
-generate-protocol → pending_approval
-                         ↓
-                   approve-protocol → final
-                         ↓ (if rejected)
-                   reopen-protocol → draft
-                         ↓
-                   submit-for-approval → pending_approval
+generate-protocol ──────────────────────────────► pending_approval
+generate-protocol-from-pdf ─────────────────────►      │
+                                                        │
+                                                  approve-protocol
+                                                        │
+                                                        ▼
+                                                      final
+                                                   (PDFs generated,
+                                                    client ChromaDB
+                                                    indexed)
+                                                        │
+                                                  reopen-protocol
+                                                        │
+                                                        ▼
+                                                      draft
+                                                        │
+                                                  submit-for-approval
+                                                        │
+                                                        ▼
+                                                  pending_approval
 ```
 
 ---
 
 ### POST `/api/practitioner/generate-protocol`
 
-Generate a protocol from a questionnaire + optional lab results. Saves to DB with `pending_approval` status.
+Generate a protocol from a JSON questionnaire + optional lab results. Saves to DB with `pending_approval` status.
 
 **Request body** (`application/json`):
 ```json
@@ -158,13 +205,6 @@ Generate a protocol from a questionnaire + optional lab results. Saves to DB wit
           "unit": "ng/mg",
           "reference_range": "12-26",
           "flag": "Above luteal range"
-        },
-        {
-          "test_name": "Total Estrogen",
-          "value": "80.9",
-          "unit": "ng/mg",
-          "reference_range": "35-70",
-          "flag": "Above range"
         }
       ]
     }
@@ -173,7 +213,7 @@ Generate a protocol from a questionnaire + optional lab results. Saves to DB wit
 ```
 
 **Notes:**
-- `questionnaire.answers` accepts either INTAKE_SCHEMA format (nested `personal_info`, `health_info`, etc.) or flat camelCase format (`legalFirstName`, `lastName`, etc.)
+- `questionnaire.answers` accepts INTAKE_SCHEMA format (nested `personal_info`, `health_info`, etc.) or flat camelCase (`legalFirstName`, `lastName`, etc.)
 - `lab_reports` is optional — omit or pass `[]` for questionnaire-only protocols
 - Supported `flag` values: `Above range`, `Below range`, `Above luteal range`, `High end of range`, `Within range`, `H`, `L`, etc.
 
@@ -188,9 +228,33 @@ Generate a protocol from a questionnaire + optional lab results. Saves to DB wit
 
 ---
 
+### POST `/api/practitioner/generate-protocol-from-pdf`
+
+Generate a protocol from a PDF questionnaire + optional lab report PDFs. Questionnaire is parsed via Gemini.
+
+**Request** — `multipart/form-data`:
+```
+user_id: 3
+client_id: 4
+template_type: standard
+questionnaire_pdf: <questionnaire.pdf>
+lab_report_pdfs: <lab.pdf>   (optional, repeat for multiple, max 3)
+```
+
+**Response** `200`:
+```json
+{
+  "protocol_id": 36,
+  "status": "pending_approval",
+  "has_lab_report": true
+}
+```
+
+---
+
 ### POST `/api/practitioner/approve-protocol/{protocol_id}`
 
-Admin approves a `pending_approval` protocol. Generates both PDFs, uploads to Cloudinary, sets status to `final`.
+Admin approves a `pending_approval` protocol. Generates both PDFs, uploads to Cloudinary, indexes protocol in client ChromaDB, sets status to `final`.
 
 **No request body.**
 
@@ -206,25 +270,22 @@ Admin approves a `pending_approval` protocol. Generates both PDFs, uploads to Cl
 
 `lab_report_pdf_url` is `null` if no lab reports were attached.
 
+**Side effects on approval:**
+- Protocol PDF generated and uploaded to Cloudinary
+- Lab report PDF generated and uploaded (if labs present)
+- `protocol.json` saved to `data/client_protocols/{client_id}/`
+- Protocol JSON chunked by key and indexed into ChromaDB `client_{client_id}` collection
+
 ---
 
 ### POST `/api/practitioner/submit-for-approval/{protocol_id}`
 
 Re-submit a `draft` protocol for admin approval.
 
-**No request body.**
-
 **Response** `200`:
 ```json
-{
-  "protocol_id": 36,
-  "status": "pending_approval"
-}
+{ "protocol_id": 36, "status": "pending_approval" }
 ```
-
-**Errors:**
-- `404` — protocol not found
-- `400` — protocol is not in `draft` status
 
 ---
 
@@ -232,174 +293,27 @@ Re-submit a `draft` protocol for admin approval.
 
 Reopen a `final` protocol for editing. Clears `pdf_url`, sets status to `draft`.
 
-**No request body.**
-
 **Response** `200`:
 ```json
-{
-  "protocol_id": 36,
-  "status": "draft"
-}
+{ "protocol_id": 36, "status": "draft" }
 ```
-
-**Errors:**
-- `404` — protocol not found
-- `400` — protocol is not in `final` status
 
 ---
 
 ### PUT `/api/practitioner/edit-protocol/{protocol_id}`
 
-Edit the `protocol_json` of a `draft` protocol.
-
-**Request body** — full replacement `protocol_json` object:
-```json
-{
-  "client_name": "Sarah Mitchell",
-  "date": "March 18, 2026",
-  "primary_nutrition_goal": "Balance blood sugar and support hormone health",
-  "active_supplements": [
-    {
-      "name": "Myo-Inositol",
-      "purpose": "Supports insulin sensitivity and ovarian function in PCOS",
-      "duration": "ongoing"
-    }
-  ]
-}
-```
+Edit the `protocol_json` of a `draft` protocol. Request body is the full replacement `protocol_json` object.
 
 **Response** `200`:
 ```json
-{
-  "protocol_id": 36,
-  "status": "draft"
-}
+{ "protocol_id": 36, "status": "draft" }
 ```
-
-**Errors:**
-- `404` — protocol not found
-- `400` — protocol is not in `draft` status
 
 ---
 
 ### GET `/api/practitioner/protocol/{protocol_id}`
 
-Fetch the full protocol record by ID.
-
-**Response** `200`:
-```json
-{
-  "protocol_id": 36,
-  "status": "pending_approval",
-  "client_id": 4,
-  "created_by_id": 3,
-  "template_type": "standard",
-  "protocol_json": {
-    "client_name": "Sarah Mitchell",
-    "date": "March 18, 2026",
-    "focus_items": ["Balance blood sugar", "Support hormone health", "Improve sleep"],
-    "concerns": [
-      {
-        "description": "Chronic fatigue and low energy levels",
-        "drivers": "Adrenal fatigue due to chronic stress and hormonal imbalance"
-      }
-    ],
-    "lab_markers": [
-      {
-        "test_name": "Estrone (E1)",
-        "value": "30.28",
-        "unit": "ng/mg",
-        "reference_range": "12-26",
-        "flag": "Above luteal range",
-        "flag_normalized": "H",
-        "is_out_of_range": true,
-        "what_we_found": "Estrone is elevated at 30.28 ng/mg, above the luteal range of 12-26.",
-        "why_this_matters": "Elevated estrone can contribute to estrogen dominance symptoms including mood swings and weight gain.",
-        "symptoms": "mood swings, weight gain, breast tenderness"
-      }
-    ],
-    "primary_nutrition_goal": "Balance blood sugar and support hormone health",
-    "hydration_target": "80-100 oz water daily",
-    "core_habits": [
-      "Prioritize balanced meals with protein and fiber to regulate blood sugar",
-      "Stay hydrated throughout the day",
-      "Practice stress-reduction techniques such as mindfulness or yoga"
-    ],
-    "calories": "2263",
-    "protein": "148g",
-    "carbohydrates": "260g",
-    "fat": "70g",
-    "fiber": "30g",
-    "program_length": "12 weeks",
-    "daily_steps_target": "8,000-10,000 steps",
-    "strength_frequency": "3x per week",
-    "strength_split": "2 upper / 1 lower",
-    "stress_supports": ["Box breathing", "Evening walk", "Journaling"],
-    "avoid_mindful": "Alcohol, refined sugar, processed foods",
-    "active_supplements": [
-      {
-        "name": "Myo-Inositol",
-        "purpose": "Supports insulin sensitivity and ovarian function in PCOS",
-        "duration": "ongoing"
-      },
-      {
-        "name": "Magnesium Glycinate",
-        "purpose": "Supports energy, sleep quality, and mood regulation",
-        "duration": "ongoing"
-      }
-    ],
-    "pause_supplements": [],
-    "titration_schedule": {
-      "week_1": "Start Magnesium Glycinate 200mg at bedtime",
-      "week_2": "Add Myo-Inositol 2g with breakfast",
-      "week_3": "Assess tolerance, increase Myo-Inositol to 4g if well tolerated"
-    },
-    "early_changes": "Weeks 1-4: improved sleep quality, reduced bloating, steadier energy",
-    "mid_changes": "Weeks 4-8: hormonal shifts, more regular cycle, gradual weight changes",
-    "long_term_changes": "Weeks 8-12+: sustained energy, improved cycle regularity, clearer skin",
-    "progress_criteria": "Cycle length under 35 days, energy rating above 6/10, consistent sleep",
-    "next_phase_focus": "Introduce targeted detox support and reassess supplement stack",
-    "goals": [
-      {
-        "goal": "Regulate menstrual cycle",
-        "action": "Myo-Inositol + blood sugar balancing nutrition + stress reduction"
-      },
-      {
-        "goal": "Increase energy levels",
-        "action": "Magnesium Glycinate + consistent sleep routine + strength training"
-      }
-    ],
-    "follow_up_recommended": "Yes",
-    "follow_up_tests": [],
-    "video_link": "",
-    "booking_link": "",
-    "additional_supports": [],
-    "food_recommendations_content": "",
-    "why_nutrition_helps": "Balancing blood sugar reduces cortisol spikes and supports ovarian function in PCOS."
-  },
-  "lab_report_json": {
-    "client_name": "Sarah Mitchell",
-    "client_age": "34",
-    "client_gender": "Female",
-    "report_type": "DUTCH Complete",
-    "report_date": "2024-01-15",
-    "overview": "Elevated total estrogen with impaired methylation pathway. Evening cortisol elevation suggests HPA axis dysregulation.",
-    "hormonal_insights": [
-      {
-        "content": "Total estrogen is elevated at 80.9 ng/mg (ref: 35-70). Estrone and estradiol are both above range, indicating estrogen dominance."
-      }
-    ],
-    "adrenal_insights": [
-      {
-        "content": "Cortisol is elevated at dinner and bedtime, disrupting the normal diurnal decline. This pattern is associated with poor sleep onset and evening anxiety."
-      }
-    ],
-    "findings": [],
-    "strategy_analysis": "Focus on estrogen clearance via methylation support (B12, folate), liver detox pathways, and cortisol regulation through evening wind-down practices.",
-    "disclaimer": "This report is for educational purposes only and does not constitute medical advice."
-  }
-}
-```
+Fetch the full protocol record by ID. Returns `protocol_json`, `lab_report_json`, status, and metadata.
 
 ---
 
@@ -409,10 +323,6 @@ Redirect to the Cloudinary PDF URL. Only works for `final` protocols.
 
 **Response** `302` — redirect to Cloudinary URL.
 
-**Errors:**
-- `404` — protocol not found or PDF not generated
-- `400` — protocol not finalized
-
 ---
 
 ### GET `/api/practitioner/protocol/{protocol_id}/preview-pdf`
@@ -421,10 +331,6 @@ Generate and stream a PDF preview for any protocol (draft or final). Does not sa
 
 **Response** `200` — `application/pdf` binary stream.
 
-```
-Content-Disposition: inline; filename=protocol_36_preview.pdf
-```
-
 ---
 
 ### POST `/api/labs/extract`
@@ -432,89 +338,109 @@ Content-Disposition: inline; filename=protocol_36_preview.pdf
 Extract structured markers from 1–3 lab report PDFs. Auto-detects lab type (DUTCH, GI-MAP, Bloodwork).
 
 **Request** — `multipart/form-data`:
-```
-files: <lab_report.pdf>   (repeat for multiple files, max 3)
-```
-
 ```bash
 curl -X POST "http://localhost:8000/api/labs/extract" \
   -F "files=@dutch_report.pdf" \
   -F "files=@gi_map_report.pdf"
 ```
 
+**Response** `200` — DUTCH/GI-MAP return `category/type/title/result/reference/flag` structure. Bloodwork returns `test_name/value/unit/reference_range/flag`.
+
+---
+
+### POST `/api/library/upload-library?library_type=nutrition&library_id=nutrition_library`
+
+Upload a `.md` knowledge library file to ChromaDB. Replaces existing library with same `library_id`.
+
+**Request** — `multipart/form-data`: `file: <library.md>`
+
 **Response** `200`:
 ```json
+{ "library_id": "nutrition_library", "library_type": "nutrition", "chunks_stored": 19 }
+```
+
+---
+
+### GET `/api/library/chromadb-libraries`
+
+List all knowledge libraries currently stored in ChromaDB.
+
+**Response** `200`:
+```json
+[
+  { "library_id": "nutrition_library", "library_type": "nutrition" },
+  { "library_id": "supplement_library", "library_type": "supplement" }
+]
+```
+
+---
+
+### DELETE `/api/library/delete-library/{library_id}`
+
+Delete a knowledge library from ChromaDB by ID.
+
+---
+
+### POST `/api/client/initialize`
+
+Manually initialize a client's protocol for chat (auto-called on approval).
+
+**Request body**:
+```json
 {
-  "job_id": "3f702bba-e86e-4d6b-90e9-8dc2314ebca4",
-  "status": "completed",
-  "processing_time": "12.43s",
-  "extracted_labs": [
-    {
-      "type": "DUTCH Complete",
-      "filename": "dutch_report.pdf",
-      "json_file": "3f702bba_dutch_complete.json",
-      "markers_count": 22,
-      "out_of_range_count": 8,
-      "data": {
-        "summary": "DUTCH Complete analysis for Female patient, age 34. 22 markers extracted.",
-        "reports": [
-          {
-            "report_type": "DUTCH Complete",
-            "report_date": "2024-01-15",
-            "key_findings": ["Elevated total estrogen", "Evening cortisol elevation"],
-            "abnormal_markers": ["Estrone (E1)", "Total Estrogen", "Cortisol (U3) - Dinner"],
-            "results": [
-              {
-                "test_name": "Estrone (E1)",
-                "value": "30.28",
-                "unit": "ng/mg",
-                "reference_range": "12-26",
-                "flag": "Above luteal range"
-              }
-            ]
-          }
-        ],
-        "markers": [
-          {
-            "test_name": "Estrone (E1)",
-            "value": "30.28",
-            "unit": "ng/mg",
-            "reference_range": "12-26",
-            "flag": "Above luteal range",
-            "flag_normalized": "H",
-            "is_out_of_range": true,
-            "what_we_found": "Estrone is elevated at 30.28 ng/mg, above the luteal range of 12-26.",
-            "why_this_matters": "Elevated estrone contributes to estrogen dominance and can worsen PCOS symptoms.",
-            "symptoms": "mood swings, weight gain, breast tenderness, irregular cycles"
-          }
-        ]
-      }
-    }
-  ]
+  "client_id": "4",
+  "protocol_content": "{...protocol json string...}",
+  "metadata": { "name": "Sarah Mitchell" }
 }
 ```
 
-**`flag_normalized` values:** `H` (high/above range), `L` (low/below range), `N` (normal/within range)
+---
+
+### POST `/api/client/chat`
+
+Chat with a client about their approved protocol. Answers are strictly grounded in the protocol via RAG.
+
+**Request body**:
+```json
+{
+  "client_id": "4",
+  "message": "What supplements am I taking?",
+  "conversation_history": []
+}
+```
+
+**Response** `200`:
+```json
+{
+  "response": "You are taking Magnesium Glycinate and Myo-Inositol...",
+  "sources": ["active_supplements", "titration_schedule"]
+}
+```
 
 ---
 
 ## Architecture
 
 ### Core Modules
-- `json_parser.py` - Maps questionnaire JSON (camelCase or INTAKE_SCHEMA) to internal intake format
-- `html_pdf_generator.py` - Renders Jinja2 HTML templates → PDF via Playwright
-- `schema.py` - Data structure definitions (`LabResult`, `LabData`, `LabReport`)
+- `json_parser.py` — Maps questionnaire JSON (camelCase or INTAKE_SCHEMA) to internal intake format. Also parses questionnaire PDFs via Gemini
+- `html_pdf_generator.py` — Renders Jinja2 HTML templates → PDF via Playwright (runs in thread executor inside async endpoints)
+- `schema.py` — Data structure definitions (`LabResult`, `LabData`, `LabReport`)
 
 ### AI Modules
-- `lab_analyzer.py` - Batch GPT analysis of all lab markers in 1 API call
-- `lab_report_generator.py` - GPT generates EndoAxis-style lab interpretation JSON
-- `knowledge_base.py` - GPT generates nutrition, supplement, lifestyle, what-to-expect, goals
-- `gemini_lab_extractor.py` - Routes lab PDFs to correct Gemini extractor, returns `LabData`
-- `gemini_extractors/` - DUTCH, GI-MAP, Bloodwork specific Gemini extractors
+- `lab_analyzer.py` — Batch GPT analysis of all lab markers in 1 API call
+- `lab_report_generator.py` — GPT generates EndoAxis-style lab interpretation JSON
+- `knowledge_base.py` — GPT generates nutrition, supplement, lifestyle, what-to-expect, goals
+- `library_vectordb.py` — ChromaDB CRUD for `knowledge_library` collection (admin-uploaded libraries)
+- `library_loader.py` — Queries ChromaDB first, falls back to static `.md` files if ChromaDB empty
+- `gemini_lab_extractor.py` — Routes lab PDFs to correct Gemini extractor, returns `LabData`
+- `gemini_extractors/` — DUTCH, GI-MAP, Bloodwork specific Gemini extractors
+- `client_chat.py` — RAG chat engine; retrieves relevant protocol chunks, generates GPT response with strict guardrails
+- `client_context.py` — Saves/loads client `protocol.json` and `metadata.json` to disk
+- `client_vectordb.py` — ChromaDB CRUD for `client_{client_id}` collections; chunks protocol by JSON key
 
 ### Utilities
-- `error_handler.py` - Error handling & logging
-- `cloudinary_helper.py` - PDF upload to Cloudinary
+- `error_handler.py` — Error handling & logging
+- `cloudinary_helper.py` — PDF upload to Cloudinary
 
 ---
 
@@ -535,13 +461,25 @@ curl -X POST "http://localhost:8000/api/labs/extract" \
 
 ---
 
+## ChromaDB Collections
+
+| Collection | Managed by | Purpose |
+|---|---|---|
+| `knowledge_library` | `library_vectordb.py` | Admin-uploaded nutrition/supplement/lifestyle libraries |
+| `client_{client_id}` | `client_vectordb.py` | Per-client protocol chunks for RAG chat |
+
+Both collections live in the same ChromaDB instance but are fully separate.
+
+---
+
 ## Tech Stack
 
 - Python 3.10+
 - OpenAI GPT-4o-mini
-- Google Gemini 2.5 Flash (lab extraction)
+- Google Gemini 2.5 Flash (lab + questionnaire PDF extraction)
 - FastAPI (REST API)
 - PostgreSQL/Neon (database)
+- ChromaDB 0.5.23 (vector store — libraries + client protocols)
 - Cloudinary (PDF storage)
 - Playwright + Chromium (HTML → PDF)
 - Jinja2 (HTML templating)
@@ -551,12 +489,16 @@ curl -X POST "http://localhost:8000/api/labs/extract" \
 
 ## Status
 
-✅ 2-PDF generation (Protocol + Lab Interpretation Report)  
-✅ Admin approval flow (`pending_approval` → `final`)  
-✅ Batch lab marker analysis (1 API call for all markers)  
-✅ Full protocol JSON saved to PostgreSQL  
-✅ PDFs uploaded to Cloudinary on approval  
-✅ Lab extraction endpoint with enriched marker output  
-✅ Auto-detect lab type (DUTCH, GI-MAP, Bloodwork)  
-✅ Questionnaire accepts both INTAKE_SCHEMA and camelCase flat format  
-✅ Comprehensive error handling and logging  
+✅ 2-PDF generation (Protocol + Lab Interpretation Report)
+✅ Admin approval flow (`pending_approval` → `final`)
+✅ Batch lab marker analysis (1 API call for all markers)
+✅ Full protocol JSON saved to PostgreSQL
+✅ PDFs uploaded to Cloudinary on approval
+✅ Lab extraction endpoint — DUTCH/GI-MAP structured format, Bloodwork flat format
+✅ Auto-detect lab type (DUTCH, GI-MAP, Bloodwork)
+✅ Questionnaire accepts both INTAKE_SCHEMA and camelCase flat format
+✅ PDF questionnaire parsing via Gemini (`generate-protocol-from-pdf`)
+✅ Dynamic knowledge libraries via ChromaDB (upload/list/delete)
+✅ RAG-based knowledge retrieval during protocol generation (falls back to static files)
+✅ Client RAG chat — approved protocols indexed in ChromaDB per client
+✅ Comprehensive error handling and logging

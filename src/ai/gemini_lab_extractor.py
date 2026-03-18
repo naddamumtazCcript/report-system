@@ -24,7 +24,7 @@ def extract_dutch(pdf_path: str) -> LabData:
     """Extract DUTCH report using Gemini"""
     from ai.gemini_extractors.dutch_extraction import extract_dutch_test
 
-    parsed_data, lab_results = extract_dutch_test(pdf_path)
+    parsed_data, lab_results, structured_results = extract_dutch_test(pdf_path)
 
     abnormal = [r.test_name for r in lab_results if r.flag and r.flag not in ('Normal', 'N')]
     lab_report = LabReport(
@@ -32,7 +32,8 @@ def extract_dutch(pdf_path: str) -> LabData:
         report_type="DUTCH Complete",
         results=lab_results,
         key_findings=[f"Patient: {parsed_data.patient_sex}, Age: {parsed_data.patient_age}"],
-        abnormal_markers=abnormal
+        abnormal_markers=abnormal,
+        structured_results=structured_results
     )
     return LabData(
         reports=[lab_report],
@@ -42,50 +43,59 @@ def extract_dutch(pdf_path: str) -> LabData:
 def extract_gi_map(pdf_path: str) -> LabData:
     """Extract GI-MAP report using Gemini"""
     from ai.gemini_extractors.gi_map import extract_gi_map as gemini_extract
-    
+
     result = gemini_extract(pdf_path)
     lab_results = []
-    
-    # Pathogens
-    for marker in result.pathogens.bacterial:
-        lab_results.append(LabResult(
-            test_name=f"Bacterial: {marker.marker_name}",
-            value=marker.result,
-            unit="",
-            reference_range=marker.reference,
-            flag=marker.status or "Normal"
-        ))
-    
-    # Commensal bacteria
-    for marker in result.commensal_bacteria:
-        lab_results.append(LabResult(
-            test_name=f"Commensal: {marker.marker_name}",
-            value=marker.result,
-            unit="",
-            reference_range=marker.reference,
-            flag=marker.status or "Normal"
-        ))
-    
-    # Intestinal health
-    for marker in result.intestinal_health.digestion:
-        lab_results.append(LabResult(
-            test_name=f"Digestion: {marker.marker_name}",
-            value=marker.result,
-            unit="",
-            reference_range=marker.reference,
-            flag=marker.status or "Normal"
-        ))
-    
+    structured_results = []
+
+    sections = [
+        ("PATHOGENS", "BACTERIAL PATHOGENS", result.pathogens.bacterial),
+        ("PATHOGENS", "PARASITIC PATHOGENS", result.pathogens.parasitic),
+        ("PATHOGENS", "VIRAL PATHOGENS", result.pathogens.viral),
+        ("H. PYLORI", "H. Pylori", [result.h_pylori.h_pylori_result]),
+        ("H. PYLORI", "Virulence Factors", result.h_pylori.virulence_factors),
+        ("COMMENSAL BACTERIA", "Commensal/Keystone Bacteria", result.commensal_bacteria),
+        ("COMMENSAL BACTERIA", "Bacterial Phyla", result.bacterial_phyla),
+        ("OPPORTUNISTIC MICROBES", "Opportunistic Microbes", result.opportunistic_microbes),
+        ("FUNGI/YEAST", "Fungi/Yeast", result.fungi_yeast),
+        ("VIRUSES", "Viruses", result.viruses),
+        ("PARASITES", "Parasites", result.parasites),
+        ("INTESTINAL HEALTH", "Digestion", result.intestinal_health.digestion),
+        ("INTESTINAL HEALTH", "GI Markers", result.intestinal_health.gi_markers),
+        ("INTESTINAL HEALTH", "Immune Response", result.intestinal_health.immune_response),
+        ("INTESTINAL HEALTH", "Inflammation", result.intestinal_health.inflammation),
+    ]
+
+    for category, section_type, markers in sections:
+        for marker in markers:
+            flag = marker.status or "Normal"
+            lab_results.append(LabResult(
+                test_name=marker.marker_name,
+                value=marker.result,
+                unit="",
+                reference_range=marker.reference,
+                flag=flag
+            ))
+            structured_results.append({
+                "category": category,
+                "type": section_type,
+                "title": marker.marker_name,
+                "result": marker.result,
+                "reference": marker.reference,
+                "flag": flag
+            })
+
     abnormal = [r.test_name for r in lab_results if r.flag and r.flag != "Normal"]
-    
+
     lab_report = LabReport(
         report_date="",
         report_type="GI-MAP",
         results=lab_results,
         key_findings=[f"H. pylori: {result.h_pylori.h_pylori_result.result}"],
-        abnormal_markers=abnormal
+        abnormal_markers=abnormal,
+        structured_results=structured_results
     )
-    
+
     return LabData(
         reports=[lab_report],
         summary=f"GI-MAP analysis complete. {len(lab_results)} markers extracted, {len(abnormal)} abnormal."

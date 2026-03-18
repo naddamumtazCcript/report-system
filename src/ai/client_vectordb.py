@@ -1,6 +1,7 @@
 """
 Client Vector Database - Index client protocols for RAG
 """
+import json
 import chromadb
 from openai import OpenAI
 import os
@@ -22,21 +23,19 @@ class ClientVectorDB:
         )
         return response.data[0].embedding
     
-    def index_protocol(self, client_id: str, protocol_content: str):
-        """Index client protocol into ChromaDB"""
+    def index_protocol(self, client_id: str, protocol_content):
+        """Index client protocol (dict or JSON string) into ChromaDB"""
         collection_name = f"client_{client_id}"
         
-        # Delete existing collection if exists
         try:
             self.client.delete_collection(collection_name)
         except:
             pass
         
-        # Create new collection
         collection = self.client.create_collection(collection_name)
         
-        # Split into chunks by section
-        chunks = self._chunk_protocol(protocol_content)
+        data = protocol_content if isinstance(protocol_content, dict) else json.loads(protocol_content)
+        chunks = self._chunk_protocol(data)
         
         # Add to collection with pre-generated embeddings
         collection.add(
@@ -73,35 +72,12 @@ class ClientVectorDB:
         
         return formatted
     
-    def _chunk_protocol(self, content: str) -> List[Dict]:
-        """Split protocol into searchable chunks by section"""
+    def _chunk_protocol(self, data: dict) -> List[Dict]:
+        """Split protocol JSON into searchable chunks — one chunk per top-level key"""
+        import json as _json
         chunks = []
-        current_section = "header"
-        current_content = []
-        
-        for line in content.split('\n'):
-            if line.startswith('## '):
-                # Save previous section
-                if current_content:
-                    text = '\n'.join(current_content).strip()
-                    if text:
-                        chunks.append({
-                            'text': text,
-                            'metadata': {'section': current_section}
-                        })
-                # Start new section
-                current_section = line.replace('## ', '').strip()
-                current_content = [line]
-            else:
-                current_content.append(line)
-        
-        # Save last section
-        if current_content:
-            text = '\n'.join(current_content).strip()
-            if text:
-                chunks.append({
-                    'text': text,
-                    'metadata': {'section': current_section}
-                })
-        
+        for key, value in data.items():
+            text = f"{key}: {_json.dumps(value) if isinstance(value, (dict, list)) else value}"
+            if text.strip():
+                chunks.append({'text': text, 'metadata': {'section': key}})
         return chunks

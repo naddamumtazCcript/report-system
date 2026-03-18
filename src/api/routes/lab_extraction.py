@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 from ..config import UPLOAD_DIR, OUTPUT_DIR
 from ai.gemini_lab_extractor import analyze_lab_with_gemini
-from ai.lab_analyzer import build_lab_markers_for_protocol
 from core.schema import LabResult
 
 router = APIRouter()
@@ -60,31 +59,34 @@ async def extract_labs(files: List[UploadFile] = File(...)):
             lab_type = lab_data.reports[0].report_type if lab_data.reports else 'unknown'
             logger.info(f"Extracted lab type: {lab_type}")
 
-            # Flatten to LabResult list — already analyzed by extractor
+            # Flatten to LabResult list for markers_count
             raw_results = [r for report in lab_data.reports for r in report.results]
-            lab_markers = build_lab_markers_for_protocol(raw_results)
 
-            # Build response dict
+            # Build response dict — use structured_results for DUTCH/GI-MAP, raw for bloodwork
+            def build_report_results(report):
+                if report.structured_results is not None:
+                    return report.structured_results
+                return [
+                    {
+                        "test_name": r.test_name,
+                        "value": r.value,
+                        "unit": r.unit,
+                        "reference_range": r.reference_range,
+                        "flag": r.flag
+                    } for r in report.results
+                ]
+
             lab_dict = {
                 "reports": [
                     {
                         "report_date": report.report_date,
                         "report_type": report.report_type,
-                        "results": [
-                            {
-                                "test_name": r.test_name,
-                                "value": r.value,
-                                "unit": r.unit,
-                                "reference_range": r.reference_range,
-                                "flag": r.flag
-                            } for r in report.results
-                        ],
+                        "results": build_report_results(report),
                         "key_findings": report.key_findings,
                         "abnormal_markers": report.abnormal_markers
                     } for report in lab_data.reports
                 ],
                 "summary": lab_data.summary,
-                "markers": lab_markers
             }
 
             json_filename = f"{job_id}_{lab_type.lower().replace(' ', '_')}.json"
@@ -98,7 +100,6 @@ async def extract_labs(files: List[UploadFile] = File(...)):
                 "filename": file.filename,
                 "json_file": json_filename,
                 "markers_count": len(raw_results),
-                "out_of_range_count": sum(1 for m in lab_markers if m['is_out_of_range']),
                 "data": lab_dict,
             })
         
