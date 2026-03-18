@@ -15,16 +15,29 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Set working directory
 WORKDIR /app
 
-# Copy requirements and install dependencies
+# Copy dependency files first (better layer caching)
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+
+# Create and use virtual environment
+RUN python -m venv /app/venv \
+    && . /app/venv/bin/activate \
+    && pip install --upgrade pip \
+    && pip install -r requirements.txt
+
+# Ensure venv is used for all subsequent RUN/CMD
+ENV VIRTUAL_ENV=/app/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Copy all project files
 COPY . .
 
-# Run pipeline once (Jessica intake), then start API so Render sees a long-running service
-RUN chmod +x scripts/start.sh
+# Expose app port
 ENV PORT=8000
 EXPOSE 8000
-CMD ["sh", "scripts/start.sh"]
+
+# Run the FastAPI app equivalent to:
+#   source venv/bin/activate
+#   cd src
+#   python3 -m uvicorn api.app:app --reload
+WORKDIR /app/src
+CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
