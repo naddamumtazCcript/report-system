@@ -113,7 +113,7 @@ python3 -m uvicorn api.app:app --reload
 
 ```
 generate-protocol ──────────────────────────────► pending_approval
-generate-protocol-from-pdf ─────────────────────►      │
+(multipart/form-data — PDF or JSON questionnaire)       │
                                                         │
                                                   approve-protocol
                                                         │
@@ -138,108 +138,37 @@ generate-protocol-from-pdf ─────────────────�
 
 ### POST `/api/practitioner/generate-protocol`
 
-Generate a protocol from a JSON questionnaire + optional lab results. Saves to DB with `pending_approval` status.
+Generate a protocol from a questionnaire + optional lab reports. Accepts PDF or JSON files for both. Saves to DB with `pending_approval` status.
 
-**Request body** (`application/json`):
+**Request** — `multipart/form-data`:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `user_id` | int | ✅ | Practitioner ID |
+| `client_id` | int | ✅ | Client ID |
+| `questionnaire` | file | ✅ | PDF or JSON — auto-detected via `content_type` |
+| `libraries` | file | ✅ | JSON file `{"nutrition": "...", "supplement": "...", "lifestyle": "..."}` |
+| `lab_reports` | file(s) | ❌ | PDF or JSON, repeat for multiple, max 3 |
+| `template` | file | ❌ | JSON file — falls back to `protocol_template.json` |
+
+**Questionnaire JSON format** (if sending JSON file):
 ```json
 {
-  "user_id": 3,
-  "client_id": 4,
-  "template_type": "standard",
-  "questionnaire": {
-    "answers": {
-      "personal_info": {
-        "legal_first_name": "Sarah",
-        "last_name": "Mitchell",
-        "gender": "Female",
-        "date_of_birth": "03/15/1990",
-        "current_weight": "165",
-        "height": "5'6\"",
-        "occupation": "Office job",
-        "email": "sarah@email.com",
-        "mobile_phone": "(555) 123-4567"
-      },
-      "health_info": {
-        "official_diagnoses": "PCOS",
-        "main_symptoms_ordered": [
-          "Chronic fatigue and low energy levels",
-          "Irregular menstrual cycles",
-          "Difficulty losing weight"
-        ],
-        "short_term_goals": "Regulate cycle, increase energy",
-        "long_term_goals": "Lose 15-20 pounds, reduce stress",
-        "current_supplements": "Vitamin D 2000 IU, Fish Oil",
-        "prescription_medications": "None"
-      },
-      "nutrition_preferences": {
-        "foods_to_avoid": "Dairy",
-        "nutrition_struggles": "Difficulty losing weight"
-      },
-      "fitness": {
-        "weekly_workout_description": "3x per week (yoga, walking)"
-      },
-      "lifestyle": {
-        "energy_levels": "3/10",
-        "sleep_quality": "4/10",
-        "alcohol_frequency": "2-3 glasses wine per week"
-      },
-      "digestive_health": {
-        "digestive_symptoms": "Bloating, gas"
-      },
-      "supplement_preferences": {
-        "supplement_preference": "Prefer natural approaches"
-      },
-      "goals": {
-        "wellness_journey_excitement": "Willing to make dietary changes"
-      }
-    }
-  },
-  "lab_reports": [
-    {
-      "report_type": "DUTCH Complete",
-      "report_date": "2024-01-15",
-      "results": [
-        {
-          "test_name": "Estrone (E1)",
-          "value": "30.28",
-          "unit": "ng/mg",
-          "reference_range": "12-26",
-          "flag": "Above luteal range"
-        }
-      ]
-    }
-  ]
+  "answers": {
+    "personal_info": { "legal_first_name": "Sarah", "last_name": "Mitchell", "gender": "Female", "date_of_birth": "03/15/1990", "current_weight": "165", "height": "5'6\"" },
+    "health_info": { "official_diagnoses": "PCOS", "main_symptoms_ordered": ["Chronic fatigue", "Irregular cycles"], "short_term_goals": "Regulate cycle" },
+    "nutrition_preferences": { "foods_to_avoid": "Dairy" },
+    "fitness": { "weekly_workout_description": "3x per week yoga, walking" },
+    "lifestyle": { "energy_levels": "3/10", "sleep_quality": "4/10" }
+  }
 }
 ```
 
 **Notes:**
-- `questionnaire.answers` accepts INTAKE_SCHEMA format (nested `personal_info`, `health_info`, etc.) or flat camelCase (`legalFirstName`, `lastName`, etc.)
-- `lab_reports` is optional — omit or pass `[]` for questionnaire-only protocols
-- Supported `flag` values: `Above range`, `Below range`, `Above luteal range`, `High end of range`, `Within range`, `H`, `L`, etc.
-
-**Response** `200`:
-```json
-{
-  "protocol_id": 36,
-  "status": "pending_approval",
-  "has_lab_report": true
-}
-```
-
----
-
-### POST `/api/practitioner/generate-protocol-from-pdf`
-
-Generate a protocol from a PDF questionnaire + optional lab report PDFs. Questionnaire is parsed via Gemini.
-
-**Request** — `multipart/form-data`:
-```
-user_id: 3
-client_id: 4
-template_type: standard
-questionnaire_pdf: <questionnaire.pdf>
-lab_report_pdfs: <lab.pdf>   (optional, repeat for multiple, max 3)
-```
+- Questionnaire JSON accepts INTAKE_SCHEMA format (nested `personal_info`, `health_info`, etc.) or flat camelCase (`legalFirstName`, `lastName`, etc.)
+- `lab_reports` is optional — omit entirely for questionnaire-only protocols
+- Template controls which AI functions are called — sections absent from template are skipped (no wasted GPT calls)
+- Libraries are injected directly into AI prompts — ChromaDB is not queried during generation
 
 **Response** `200`:
 ```json
@@ -434,9 +363,9 @@ Chat with a client about their approved protocol. Answers are strictly grounded 
 - `library_loader.py` — Queries ChromaDB first, falls back to static `.md` files if ChromaDB empty
 - `gemini_lab_extractor.py` — Routes lab PDFs to correct Gemini extractor, returns `LabData`
 - `gemini_extractors/` — DUTCH, GI-MAP, Bloodwork specific Gemini extractors
-- `client_chat.py` — RAG chat engine; retrieves relevant protocol chunks, generates GPT response with strict guardrails
+- `client_chat.py` — RAG chat engine; history-aware search query, section expansion for list keys, GPT response with guardrails
 - `client_context.py` — Saves/loads client `protocol.json` and `metadata.json` to disk
-- `client_vectordb.py` — ChromaDB CRUD for `client_{client_id}` collections; chunks protocol by JSON key
+- `client_vectordb.py` — ChromaDB CRUD for `client_{client_id}` collections; granular chunking (one chunk per list item / dict sub-key); `get_by_section()` for full section retrieval
 
 ### Utilities
 - `error_handler.py` — Error handling & logging
@@ -501,4 +430,10 @@ Both collections live in the same ChromaDB instance but are fully separate.
 ✅ Dynamic knowledge libraries via ChromaDB (upload/list/delete)
 ✅ RAG-based knowledge retrieval during protocol generation (falls back to static files)
 ✅ Client RAG chat — approved protocols indexed in ChromaDB per client
+✅ History-aware RAG search — follow-up questions retrieve correct chunks
+✅ Section expansion — list sections (supplements, goals) always returned complete
+✅ Granular protocol chunking — one chunk per list item / dict sub-key
+✅ Hardened JSON parsing — shared helper with logging on failure
+✅ Temp file cleanup — all uploaded/generated files deleted after use
+✅ Conversation history capped at 10 messages per GPT call
 ✅ Comprehensive error handling and logging

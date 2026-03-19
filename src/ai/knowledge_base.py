@@ -6,12 +6,28 @@ import json
 from openai import OpenAI
 from dotenv import load_dotenv
 from ai.pattern_detector import detect_patterns, get_required_libraries
-from ai.library_loader import get_library_context
+from ai.library_loader import get_library_context, get_library_context_from_json
 from utils.token_tracker import TokenTracker
 
 load_dotenv()
 
 token_tracker = TokenTracker()
+
+
+def _parse_json_response(raw: str, fn_name: str, fallback):
+    """Strip markdown fences and parse JSON. Logs raw output on failure."""
+    text = raw.strip()
+    if text.startswith('```json'):
+        text = text[7:]
+    elif text.startswith('```'):
+        text = text[3:]
+    if text.endswith('```'):
+        text = text[:-3]
+    try:
+        return json.loads(text.strip())
+    except Exception as e:
+        print(f"[{fn_name}] JSON parse failed: {e}\nRaw output: {raw[:500]}")
+        return fallback
 
 def calculate_bmr(weight_lbs, height_inches, age, gender):
     weight_kg = weight_lbs * 0.453592
@@ -99,24 +115,19 @@ Return ONLY a JSON object with this structure:
     try:
         response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
         token_tracker.track("symptom_analysis", response)
-        result = response.choices[0].message.content.strip()
-        if result.startswith('```json'):
-            result = result[7:]
-        if result.endswith('```'):
-            result = result[:-3]
-        return json.loads(result.strip())
+        return _parse_json_response(response.choices[0].message.content, "analyze_symptom_drivers", {})
     except Exception as e:
         print(f"Error analyzing symptoms: {e}")
         return {}
 
-def generate_lifestyle_recommendations(client_data):
+def generate_lifestyle_recommendations(client_data, library_context: str = None):
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         return {}
     client = OpenAI(api_key=api_key)
     patterns = detect_patterns(client_data)
-    libraries_needed = get_required_libraries(patterns)
-    library_context = get_library_context(libraries_needed, patterns)
+    if library_context is None:
+        library_context = get_library_context(get_required_libraries(patterns), patterns)
     symptoms = client_data.get('health_info', {}).get('main_symptoms_ordered', [])
     diagnoses = client_data.get('health_info', {}).get('official_diagnoses', '')
     current_workout = client_data.get('fitness', {}).get('weekly_workout_description', '')
@@ -163,24 +174,19 @@ Rules:
     try:
         response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
         token_tracker.track("lifestyle_recommendations", response)
-        result = response.choices[0].message.content.strip()
-        if result.startswith('```json'):
-            result = result[7:]
-        if result.endswith('```'):
-            result = result[:-3]
-        return json.loads(result.strip())
+        return _parse_json_response(response.choices[0].message.content, "generate_lifestyle_recommendations", {})
     except Exception as e:
         print(f"Error generating lifestyle recommendations: {e}")
         return {}
 
-def generate_supplement_recommendations(client_data, lab_data=None):
+def generate_supplement_recommendations(client_data, lab_data=None, library_context: str = None):
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         return {}
     client = OpenAI(api_key=api_key)
     patterns = detect_patterns(client_data)
-    libraries_needed = get_required_libraries(patterns)
-    library_context = get_library_context(libraries_needed, patterns)
+    if library_context is None:
+        library_context = get_library_context(get_required_libraries(patterns), patterns)
     symptoms = client_data.get('health_info', {}).get('main_symptoms_ordered', [])
     diagnoses = client_data.get('health_info', {}).get('official_diagnoses', '')
     current_supplements = client_data.get('health_info', {}).get('current_supplements', '')
@@ -247,24 +253,19 @@ Rules:
     try:
         response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
         token_tracker.track("supplement_recommendations", response)
-        result = response.choices[0].message.content.strip()
-        if result.startswith('```json'):
-            result = result[7:]
-        if result.endswith('```'):
-            result = result[:-3]
-        return json.loads(result.strip())
+        return _parse_json_response(response.choices[0].message.content, "generate_supplement_recommendations", {})
     except Exception as e:
         print(f"Error generating supplement recommendations: {e}")
         return {}
 
-def generate_nutrition_recommendations(client_data, lab_data=None):
+def generate_nutrition_recommendations(client_data, lab_data=None, library_context: str = None):
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         return {}
     client = OpenAI(api_key=api_key)
     patterns = detect_patterns(client_data)
-    libraries_needed = get_required_libraries(patterns)
-    library_context = get_library_context(libraries_needed, patterns)
+    if library_context is None:
+        library_context = get_library_context(get_required_libraries(patterns), patterns)
     symptoms = client_data.get('health_info', {}).get('main_symptoms_ordered', [])
     diagnoses = client_data.get('health_info', {}).get('official_diagnoses', '')
     goals = client_data.get('health_info', {}).get('short_term_goals', '')
@@ -323,12 +324,7 @@ Rules:
     try:
         response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
         token_tracker.track("nutrition_recommendations", response)
-        result = response.choices[0].message.content.strip()
-        if result.startswith('```json'):
-            result = result[7:]
-        if result.endswith('```'):
-            result = result[:-3]
-        return json.loads(result.strip())
+        return _parse_json_response(response.choices[0].message.content, "generate_nutrition_recommendations", {})
     except Exception as e:
         print(f"Error generating nutrition recommendations: {e}")
         return {}
@@ -370,12 +366,7 @@ Return ONLY a JSON object:
     try:
         response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
         token_tracker.track("what_to_expect", response)
-        result = response.choices[0].message.content.strip()
-        if result.startswith('```json'):
-            result = result[7:]
-        if result.endswith('```'):
-            result = result[:-3]
-        return json.loads(result.strip())
+        return _parse_json_response(response.choices[0].message.content, "generate_what_to_expect", {})
     except Exception as e:
         print(f"Error generating what to expect: {e}")
         return {}
@@ -414,12 +405,7 @@ Return ONLY a JSON array:
     try:
         response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], temperature=0.3)
         token_tracker.track("goals_action_plan", response)
-        result = response.choices[0].message.content.strip()
-        if result.startswith('```json'):
-            result = result[7:]
-        if result.endswith('```'):
-            result = result[:-3]
-        return json.loads(result.strip())
+        return _parse_json_response(response.choices[0].message.content, "generate_goals_action_plan", [])
     except Exception as e:
         print(f"Error generating goals action plan: {e}")
         return []

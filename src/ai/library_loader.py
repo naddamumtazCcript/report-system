@@ -40,6 +40,24 @@ def _query_chromadb(query: str, library_types: list, n_results: int = 8) -> str:
         return ""
 
 
+def get_library_context_from_json(libraries_json: dict, patterns: dict) -> str:
+    """
+    Build library context directly from a provided libraries JSON dict.
+    Expected format: {"nutrition": "...", "supplement": "...", "lifestyle": "...", ...}
+    """
+    context = "# KNOWLEDGE BASE RULES\n\n"
+    if patterns.get('pcos'):
+        context += "**Focus: PCOS/Blood Sugar Pattern Detected**\n\n"
+    if patterns.get('bloating') or patterns.get('digestive_issues'):
+        context += "**Focus: Digestive/Bloating Pattern Detected**\n\n"
+    if patterns.get('stress') or patterns.get('fatigue'):
+        context += "**Focus: Stress/Fatigue Pattern Detected**\n\n"
+    for lib_type, content in libraries_json.items():
+        if content and content.strip():
+            context += f"## {lib_type.upper()} LIBRARY\n\n{content}\n\n---\n\n"
+    return context
+
+
 def get_library_context(libraries_needed: dict, patterns: dict) -> str:
     """
     Get combined library context for AI prompts.

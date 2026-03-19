@@ -47,6 +47,23 @@ class ClientVectorDB:
         
         return len(chunks)
     
+    def get_by_section(self, client_id: str, section: str) -> List[Dict]:
+        """Fetch all chunks belonging to a specific section key."""
+        collection_name = f"client_{client_id}"
+        try:
+            collection = self.client.get_collection(collection_name)
+        except:
+            return []
+        results = collection.get(where={"section": section})
+        formatted = []
+        if results and results.get('documents'):
+            for i, doc in enumerate(results['documents']):
+                formatted.append({
+                    'text': doc,
+                    'metadata': results['metadatas'][i] if results.get('metadatas') else {}
+                })
+        return formatted
+
     def search(self, client_id: str, query: str, n_results: int = 3) -> List[Dict]:
         """Search client protocol for relevant content"""
         collection_name = f"client_{client_id}"
@@ -73,11 +90,40 @@ class ClientVectorDB:
         return formatted
     
     def _chunk_protocol(self, data: dict) -> List[Dict]:
-        """Split protocol JSON into searchable chunks — one chunk per top-level key"""
-        import json as _json
+        """Split protocol JSON into searchable chunks with size-aware splitting."""
+        MAX_CHARS = 500
         chunks = []
+
         for key, value in data.items():
-            text = f"{key}: {_json.dumps(value) if isinstance(value, (dict, list)) else value}"
-            if text.strip():
-                chunks.append({'text': text, 'metadata': {'section': key}})
+            if isinstance(value, list):
+                # One chunk per list item (e.g. active_supplements, goals)
+                for i, item in enumerate(value):
+                    text = f"{key}[{i}]: {json.dumps(item) if isinstance(item, (dict, list)) else item}"
+                    if text.strip():
+                        chunks.append({'text': text, 'metadata': {'section': key}})
+            elif isinstance(value, dict):
+                # One chunk per dict entry (e.g. titration_schedule, strength_training)
+                for sub_key, sub_val in value.items():
+                    text = f"{key}.{sub_key}: {json.dumps(sub_val) if isinstance(sub_val, (dict, list)) else sub_val}"
+                    if text.strip():
+                        chunks.append({'text': text, 'metadata': {'section': key}})
+            else:
+                text = f"{key}: {value}"
+                if not text.strip():
+                    continue
+                # Split long strings by sentence
+                if len(text) > MAX_CHARS:
+                    sentences = text.replace('. ', '.\n').split('\n')
+                    buffer = ""
+                    for sentence in sentences:
+                        if len(buffer) + len(sentence) > MAX_CHARS and buffer:
+                            chunks.append({'text': buffer.strip(), 'metadata': {'section': key}})
+                            buffer = sentence
+                        else:
+                            buffer = f"{buffer} {sentence}".strip()
+                    if buffer:
+                        chunks.append({'text': buffer.strip(), 'metadata': {'section': key}})
+                else:
+                    chunks.append({'text': text, 'metadata': {'section': key}})
+
         return chunks

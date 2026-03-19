@@ -27,6 +27,7 @@ from ai.knowledge_base import (
     generate_what_to_expect,
     generate_goals_action_plan,
 )
+from ai.library_loader import get_library_context_from_json
 from utils.cloudinary_helper import upload_pdf_bytes
 from utils.error_handler import logger
 
@@ -39,23 +40,48 @@ class LabReportInput(BaseModel):
     results: List[Dict[str, Any]]
 
 
-class GenerateProtocolRequest(BaseModel):
-    user_id: int
-    client_id: int
-    template_type: Optional[str] = "standard"
-    questionnaire: Dict[str, Any]        # {answers: {...}}
-    lab_reports: Optional[List[LabReportInput]] = []
+def _get_template_section_titles(template: dict) -> set:
+    """Extract all section/subsection titles from template as lowercase set."""
+    titles = set()
+    for section in template.get('sections', []):
+        titles.add(section.get('title', '').lower())
+        for sub in section.get('subsections', []):
+            titles.add(sub.get('title', '').lower())
+    return titles
 
 
-def _build_protocol_json(intake_data: dict, lab_markers: list, client_name: str) -> dict:
-    """Run AI recommendations and assemble protocol JSON."""
-    symptom_data = analyze_symptom_drivers(intake_data)
-    lifestyle_data = generate_lifestyle_recommendations(intake_data)
-    supplement_data = generate_supplement_recommendations(intake_data)
-    nutrition_data = generate_nutrition_recommendations(intake_data)
-    macros = get_nutrition_recommendations(intake_data).get('macros', {})
-    what_to_expect = generate_what_to_expect(intake_data, supplement_data)
-    goals_plan = generate_goals_action_plan(intake_data, nutrition_data, lifestyle_data, supplement_data)
+def _section_present(titles: set, *keywords) -> bool:
+    """Check if any keyword appears in any template section title."""
+    return any(kw in title for title in titles for kw in keywords)
+
+
+def _build_protocol_json(intake_data: dict, lab_markers: list, client_name: str,
+                         template: dict, libraries_json: dict) -> dict:
+    """Run AI recommendations for sections present in template and assemble protocol JSON."""
+    from ai.pattern_detector import detect_patterns
+
+    titles = _get_template_section_titles(template)
+    patterns = detect_patterns(intake_data)
+    library_context = get_library_context_from_json(libraries_json, patterns)
+
+    # Inject library context into knowledge_base functions via monkey-patch on intake_data
+    # We pass library_context as extra key — each kb function calls get_library_context internally,
+    # but we override by passing pre-built context where supported
+    needs_nutrition   = _section_present(titles, 'nutrition')
+    needs_lifestyle   = _section_present(titles, 'lifestyle', 'movement')
+    needs_supplements = _section_present(titles, 'supplement')
+    needs_concerns    = _section_present(titles, 'concern', 'general')
+    needs_what_expect = _section_present(titles, 'what to expect', 'after this phase')
+    needs_goals       = _section_present(titles, 'goals')
+    needs_macros      = _section_present(titles, 'macro')
+
+    symptom_data   = analyze_symptom_drivers(intake_data)                                        if needs_concerns    else {}
+    nutrition_data = generate_nutrition_recommendations(intake_data, library_context=library_context) if needs_nutrition   else {}
+    lifestyle_data = generate_lifestyle_recommendations(intake_data, library_context=library_context) if needs_lifestyle   else {}
+    supplement_data = generate_supplement_recommendations(intake_data, library_context=library_context) if needs_supplements else {}
+    macros         = get_nutrition_recommendations(intake_data).get('macros', {})                 if needs_macros      else {}
+    what_to_expect = generate_what_to_expect(intake_data, supplement_data)                        if needs_what_expect else {}
+    goals_plan     = generate_goals_action_plan(intake_data, nutrition_data, lifestyle_data, supplement_data) if needs_goals else []
 
     concerns = [
         {'description': sd['symptom'], 'drivers': sd['drivers']}
@@ -65,6 +91,7 @@ def _build_protocol_json(intake_data: dict, lab_markers: list, client_name: str)
     return {
         'client_name': client_name,
         'date': datetime.now().strftime('%B %d, %Y'),
+        'template': template,
         'focus_items': nutrition_data.get('focus_items', []),
         'concerns': concerns,
         'lab_markers': lab_markers,
@@ -102,60 +129,108 @@ def _build_protocol_json(intake_data: dict, lab_markers: list, client_name: str)
 
 
 @router.post("/practitioner/generate-protocol")
-async def generate_protocol(body: GenerateProtocolRequest):
+async def generate_protocol(
+    user_id: int = Form(...),
+    client_id: int = Form(...),
+    questionnaire: UploadFile = File(...),
+    libraries: UploadFile = File(...),
+    lab_reports: Optional[List[UploadFile]] = File(None),
+    template: Optional[UploadFile] = File(None),
+):
     """
-    Generate protocol from JSON questionnaire + lab reports and save to DB.
+    Generate protocol from questionnaire + libraries. Accepts PDF or JSON files.
 
-    Request body:
-    {
-        "user_id": 3,
-        "client_id": 4,
-        "template_type": "standard",
-        "questionnaire": { "answers": { "legalFirstName": "...", ... } },
-        "lab_reports": [
-            {
-                "report_type": "DUTCH Complete",
-                "report_date": "2024-01-01",
-                "results": [
-                    { "test_name": "...", "value": "...", "unit": "...", "reference_range": "...", "flag": "..." }
-                ]
-            }
-        ]
-    }
+    - questionnaire: PDF or JSON file
+    - libraries:     JSON file (required) — {"nutrition": "...", "supplement": "...", "lifestyle": "..."}
+    - lab_reports:   PDF or JSON files (optional, max 3)
+    - template:      JSON file (optional, falls back to protocol_template.json)
     """
     try:
-        logger.info(f"[generate_protocol] user={body.user_id} client={body.client_id} labs={len(body.lab_reports)}")
+        from ai.gemini_lab_extractor import analyze_lab_with_gemini
+        from api.config import UPLOAD_DIR
 
-        # Parse questionnaire JSON -> intake_data
-        intake_data = parse_questionnaire_json(body.questionnaire)
+        logger.info(f"[generate_protocol] user={user_id} client={client_id}")
+
+        # --- Libraries (required) ---
+        if not libraries or not libraries.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="Libraries must be provided. Please attach a libraries JSON file containing nutrition, supplement, and lifestyle knowledge."
+            )
+        libraries_bytes = await libraries.read()
+        try:
+            libraries_json = json.loads(libraries_bytes)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Libraries file must be valid JSON.")
+
+        # --- Template (optional, fallback to protocol_template.json) ---
+        if template and template.filename:
+            template_bytes = await template.read()
+            try:
+                template_json = json.loads(template_bytes)
+            except Exception:
+                raise HTTPException(status_code=400, detail="Template file must be valid JSON.")
+        else:
+            template_path = Path(__file__).parent.parent.parent.parent / "templates" / "protocol_template.json"
+            template_json = json.loads(template_path.read_text())
+
+        # --- Questionnaire ---
+        q_bytes = await questionnaire.read()
+        if questionnaire.content_type == "application/pdf":
+            q_path = UPLOAD_DIR / f"{client_id}_questionnaire_{questionnaire.filename}"
+            q_path.write_bytes(q_bytes)
+            try:
+                intake_data = parse_questionnaire_pdf(str(q_path))
+            finally:
+                q_path.unlink(missing_ok=True)
+        else:
+            intake_data = parse_questionnaire_json(json.loads(q_bytes))
+
         pi = intake_data.get('personal_info', {})
         client_name = f"{pi.get('legal_first_name', '')} {pi.get('last_name', '')}".strip() or 'Client'
 
-        # Process lab reports from JSON
+        # --- Lab Reports (optional) ---
         lab_results = []
         report_type = 'Lab Report'
         report_date = ''
 
-        for lab in body.lab_reports:
-            report_type = lab.report_type or 'Lab Report'
-            report_date = lab.report_date or ''
-            for r in lab.results:
-                lab_results.append(LabResult(
-                    test_name=r.get('test_name', ''),
-                    value=r.get('value', ''),
-                    unit=r.get('unit', ''),
-                    reference_range=r.get('reference_range', ''),
-                    flag=r.get('flag', '')
-                ))
+        if lab_reports:
+            valid_labs = [f for f in lab_reports if f and f.filename]
+            if len(valid_labs) > 3:
+                raise HTTPException(status_code=400, detail="Maximum 3 lab report files allowed.")
+            for lab_file in valid_labs:
+                lab_bytes = await lab_file.read()
+                if lab_file.content_type == "application/pdf":
+                    lab_path = UPLOAD_DIR / f"{client_id}_lab_{lab_file.filename}"
+                    lab_path.write_bytes(lab_bytes)
+                    try:
+                        lab_data = analyze_lab_with_gemini(str(lab_path))
+                    finally:
+                        lab_path.unlink(missing_ok=True)
+                    if lab_data.reports:
+                        report_type = lab_data.reports[0].report_type
+                        report_date = lab_data.reports[0].report_date or ''
+                    lab_results.extend(r for report in lab_data.reports for r in report.results)
+                else:
+                    parsed = json.loads(lab_bytes)
+                    parsed_list = parsed if isinstance(parsed, list) else [parsed]
+                    for lab in parsed_list:
+                        report_type = lab.get('report_type', 'Lab Report')
+                        report_date = lab.get('report_date', '')
+                        for r in lab.get('results', []):
+                            lab_results.append(LabResult(
+                                test_name=r.get('test_name', ''),
+                                value=r.get('value', ''),
+                                unit=r.get('unit', ''),
+                                reference_range=r.get('reference_range', ''),
+                                flag=r.get('flag', '')
+                            ))
 
-        # Analyze lab results (single batch GPT call)
+        # --- AI Pipeline ---
         analyzed = analyze_lab_results(lab_results) if lab_results else []
         lab_markers = build_lab_markers_for_protocol(analyzed)
+        protocol_json = _build_protocol_json(intake_data, lab_markers, client_name, template_json, libraries_json)
 
-        # Build protocol JSON
-        protocol_json = _build_protocol_json(intake_data, lab_markers, client_name)
-
-        # Build lab report JSON (only if labs present)
         lab_report_json = None
         if analyzed:
             lab_report_json = generate_lab_interpretation_json(
@@ -167,7 +242,7 @@ async def generate_protocol(body: GenerateProtocolRequest):
                 report_date=report_date or datetime.now().strftime('%B %d, %Y')
             )
 
-        # Save to DB
+        # --- Save to DB ---
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
@@ -177,8 +252,7 @@ async def generate_protocol(body: GenerateProtocolRequest):
         """, (json.dumps({
             'protocol_json': protocol_json,
             'lab_report_json': lab_report_json,
-            'template_type': body.template_type
-        }), body.client_id, body.user_id))
+        }), client_id, user_id))
         protocol_id = cur.fetchone()['id']
         conn.commit()
         cur.close()
@@ -191,105 +265,10 @@ async def generate_protocol(body: GenerateProtocolRequest):
             "has_lab_report": lab_report_json is not None
         }
 
-    except Exception as e:
-        logger.error(f"[generate_protocol] Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/practitioner/generate-protocol-from-pdf")
-async def generate_protocol_from_pdf(
-    user_id: int = Form(...),
-    client_id: int = Form(...),
-    template_type: str = Form("standard"),
-    questionnaire_pdf: UploadFile = File(...),
-    lab_report_pdfs: Optional[List[UploadFile]] = File(None)
-):
-    """
-    Generate protocol from PDF questionnaire + optional lab report PDFs.
-    Questionnaire PDF is parsed via Gemini into INTAKE_SCHEMA format.
-    Lab PDFs are extracted via existing gemini_lab_extractor pipeline.
-    """
-    try:
-        from ai.gemini_lab_extractor import analyze_lab_with_gemini
-        from api.config import UPLOAD_DIR
-
-        logger.info(f"[generate_protocol_from_pdf] user={user_id} client={client_id}")
-
-        # Save + parse questionnaire PDF
-        q_bytes = await questionnaire_pdf.read()
-        q_path = UPLOAD_DIR / f"{client_id}_questionnaire_{questionnaire_pdf.filename}"
-        q_path.write_bytes(q_bytes)
-
-        intake_data = parse_questionnaire_pdf(str(q_path))
-        pi = intake_data.get('personal_info', {})
-        client_name = f"{pi.get('legal_first_name', '')} {pi.get('last_name', '')}".strip() or 'Client'
-
-        # Process lab PDFs if provided
-        lab_results = []
-        report_type = 'Lab Report'
-        report_date = ''
-
-        if lab_report_pdfs:
-            valid_labs = [f for f in lab_report_pdfs if f and f.filename]
-            if len(valid_labs) > 3:
-                raise HTTPException(status_code=400, detail="Maximum 3 lab report PDFs allowed")
-            for lab_file in valid_labs:
-                lab_bytes = await lab_file.read()
-                lab_path = UPLOAD_DIR / f"{client_id}_lab_{lab_file.filename}"
-                lab_path.write_bytes(lab_bytes)
-                lab_data = analyze_lab_with_gemini(str(lab_path))
-                if lab_data.reports:
-                    report_type = lab_data.reports[0].report_type
-                    report_date = lab_data.reports[0].report_date or ''
-                lab_results.extend(r for report in lab_data.reports for r in report.results)
-
-        # Analyze lab results
-        analyzed = analyze_lab_results(lab_results) if lab_results else []
-        lab_markers = build_lab_markers_for_protocol(analyzed)
-
-        # Build protocol JSON
-        protocol_json = _build_protocol_json(intake_data, lab_markers, client_name)
-
-        # Build lab report JSON
-        lab_report_json = None
-        if analyzed:
-            lab_report_json = generate_lab_interpretation_json(
-                lab_results=analyzed,
-                report_type=report_type,
-                client_name=client_name,
-                client_age=str(pi.get('age', '')),
-                client_gender=pi.get('gender', 'Female'),
-                report_date=report_date or datetime.now().strftime('%B %d, %Y')
-            )
-
-        # Save to DB
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO "Protocol" (protocol, status, "clientId", "createdById")
-            VALUES (%s, 'pending_approval', %s, %s)
-            RETURNING id
-        """, (json.dumps({
-            'protocol_json': protocol_json,
-            'lab_report_json': lab_report_json,
-            'template_type': template_type
-        }), client_id, user_id))
-        protocol_id = cur.fetchone()['id']
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        logger.info(f"[generate_protocol_from_pdf] Saved protocol id={protocol_id}")
-        return {
-            "protocol_id": protocol_id,
-            "status": "pending_approval",
-            "has_lab_report": lab_report_json is not None
-        }
-
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[generate_protocol_from_pdf] Error: {e}", exc_info=True)
+        logger.error(f"[generate_protocol] Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -380,17 +359,23 @@ async def approve_protocol(protocol_id: int):
         # Generate + upload PDF 1 in thread
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
             protocol_pdf_path = f.name
-        await loop.run_in_executor(None, partial(generate_protocol_pdf, protocol_json, protocol_pdf_path))
-        protocol_cloudinary = upload_pdf_bytes(Path(protocol_pdf_path).read_bytes(), f"protocol_{protocol_id}")
+        try:
+            await loop.run_in_executor(None, partial(generate_protocol_pdf, protocol_json, protocol_pdf_path))
+            protocol_cloudinary = upload_pdf_bytes(Path(protocol_pdf_path).read_bytes(), f"protocol_{protocol_id}")
+        finally:
+            Path(protocol_pdf_path).unlink(missing_ok=True)
 
         # Generate + upload PDF 2 if present
         lab_report_url = None
         if lab_report_json:
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
                 lab_pdf_path = f.name
-            await loop.run_in_executor(None, partial(generate_lab_report_pdf, lab_report_json, lab_pdf_path))
-            lab_cloudinary = upload_pdf_bytes(Path(lab_pdf_path).read_bytes(), f"lab_report_{protocol_id}")
-            lab_report_url = lab_cloudinary.get('url')
+            try:
+                await loop.run_in_executor(None, partial(generate_lab_report_pdf, lab_report_json, lab_pdf_path))
+                lab_cloudinary = upload_pdf_bytes(Path(lab_pdf_path).read_bytes(), f"lab_report_{protocol_id}")
+                lab_report_url = lab_cloudinary.get('url')
+            finally:
+                Path(lab_pdf_path).unlink(missing_ok=True)
 
         cur.execute(
             'UPDATE "Protocol" SET status = %s, pdf_url = %s, lab_report_pdf_url = %s WHERE id = %s',
@@ -538,8 +523,11 @@ async def preview_pdf(protocol_id: int):
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
             tmp_path = f.name
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, partial(generate_protocol_pdf, protocol_json, tmp_path))
-        pdf_bytes = Path(tmp_path).read_bytes()
+        try:
+            await loop.run_in_executor(None, partial(generate_protocol_pdf, protocol_json, tmp_path))
+            pdf_bytes = Path(tmp_path).read_bytes()
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
 
         return Response(
             content=pdf_bytes,

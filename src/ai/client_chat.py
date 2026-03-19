@@ -31,23 +31,50 @@ class ClientChat:
     
     def chat(self, message: str, conversation_history: Optional[List[Dict]] = None) -> Dict:
         """Process client message and return response"""
-        
+
+        # Build search query: include only the immediately prior turn so a topic
+        # switch doesn't drag stale context into the vector search
+        search_query = message
+        if conversation_history and len(conversation_history) >= 2:
+            last_user = conversation_history[-2].get("content", "")
+            search_query = f"{last_user} {message}"
+
         # Retrieve relevant protocol sections
-        relevant_sections = self.vectordb.search(self.client_id, message, n_results=3)
-        
+        relevant_sections = self.vectordb.search(self.client_id, search_query, n_results=4)
+
         if not relevant_sections:
             return {
                 'response': "I don't have enough information in your protocol to answer that question. Please contact your practitioner for more details.",
                 'sources': []
             }
-        
+
+        # If a list section is partially retrieved, pull all chunks from that section
+        relevant_sections = self._expand_list_sections(relevant_sections)
+
         # Generate response with strict prompt
         response = self._generate_response(message, relevant_sections, conversation_history)
-        
+
         return {
             'response': response,
-            'sources': [s['metadata'].get('section', 'Unknown') for s in relevant_sections]
+            'sources': list(dict.fromkeys(s['metadata'].get('section', 'Unknown') for s in relevant_sections))
         }
+
+    def _expand_list_sections(self, sections: List[Dict]) -> List[Dict]:
+        """If any retrieved chunk belongs to a list section, fetch all chunks from that section."""
+        hit_sections = {s['metadata'].get('section') for s in sections}
+        expanded = list(sections)
+        seen_texts = {s['text'] for s in sections}
+
+        for section_name in hit_sections:
+            # Only expand if the section name looks like a list key (supplements, goals, etc.)
+            all_in_section = self.vectordb.get_by_section(self.client_id, section_name)
+            if len(all_in_section) > 1:  # it's a multi-chunk section
+                for chunk in all_in_section:
+                    if chunk['text'] not in seen_texts:
+                        expanded.append(chunk)
+                        seen_texts.add(chunk['text'])
+
+        return expanded
     
     def _generate_response(self, message: str, relevant_sections: List[Dict], 
                           conversation_history: Optional[List[Dict]] = None) -> str:
@@ -64,23 +91,23 @@ class ClientChat:
 
 STRICT RULES:
 1. Answer ONLY based on the protocol sections provided below
-2. If the question is NOT related to health, nutrition, or wellness, respond: "I can only help with questions about your health protocol. Please ask about your nutrition plan, supplements, lifestyle recommendations, or health concerns."
-3. If the answer is NOT in the protocol, say: "I don't have that information in your protocol. Please contact your practitioner."
-4. Do NOT give general health advice beyond the protocol
-5. Do NOT make up recommendations
+2. If the retrieved protocol sections do not contain enough information to answer the question, say: "I don't have that specific information in your protocol. Please contact your practitioner."
+3. If the question is completely unrelated to health, wellness, or the client's protocol (e.g. movies, sports, coding), respond: "I can only help with questions about your health protocol."
+4. Do NOT give general health advice beyond what is in the protocol
+5. Do NOT make up recommendations not present in the protocol
 6. Be professional, supportive, and concise
 7. Always cite which section you're referencing
 
 PROTOCOL SECTIONS:
 {context}
 
-Remember: Only answer from the protocol above. No external knowledge."""
+Remember: If the answer is in the protocol sections above, use it. Only deflect if the sections genuinely don't contain the answer."""
 
         # Build messages
         messages = [{"role": "system", "content": system_prompt}]
         
         if conversation_history:
-            messages.extend(conversation_history)
+            messages.extend(conversation_history[-10:])  # cap at last 10 messages
         
         messages.append({"role": "user", "content": message})
         
